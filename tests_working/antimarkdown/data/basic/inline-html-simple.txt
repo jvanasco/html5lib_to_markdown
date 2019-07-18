@@ -1,0 +1,31 @@
+Here's a simple block:
+
+<div>
+    foo
+</div>
+
+This should be a code block, though:
+
+    <div>
+        foo
+    </div>
+
+As should this:
+
+    <div>foo</div>
+
+Now, nested:
+
+<div>
+    <div>
+        <div>
+            foo
+        </div>
+    </div>
+</div>
+
+Code block:
+
+    <!-- Comment -->
+
+weird stuff>

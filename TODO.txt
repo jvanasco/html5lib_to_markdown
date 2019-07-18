@@ -1,0 +1,44 @@
+Identified Tasks
+================
+
+1. Integrate more of the 3rd party library tests
+** integrate tests from antimarkdown
+** integrate tests from markdownify
+
+2. step "4b" in `to_markdown` should be eliminated
+	in this step, we alter the existing dom to swap the ``TokenHR`` with (``TokenNewline``, ``TokenHR``(stripped), ``TokenNewline``)
+	a better approach would be to surround the ``TokenHR`` in a special block
+	
+	``TokenProtectedBlock``
+	
+	this could potentially be applied to ``TokenHN`` too
+	
+	``TokenProtectedBlock`` would protect the contents from having their newlines adjusted
+	
+	for example:
+
+		TokenProtectedBlock
+		TokenHR
+		TokenProtectedBlock
+		TokenNewlines(2)
+		TokenCharacters
+		
+	when analyzing the above for cleanup, The TokenNewlines(2) would consolidate to a TokenNewslines(1) but not be able to alter the TokenProtectedBlock
+
+3. Bold+Italic text
+	three asterisk/underscore
+	a `character_italicbold` customization hook was added, however it is not rendered.  this requires searching in/out of the tags (like with a/img tags and code blocks)
+	perhaps this can be solved with a regex?
+
+4. are we escaping characters correctly?
+
+5. can there be some performance improvements?
+
+6. strip attributes from html tags and/or use a callable function like bleach
+
+
+Misc Readings for Reference
+===========================
+
+Dealing with types of content and blocks
+	https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Phrasing_content	

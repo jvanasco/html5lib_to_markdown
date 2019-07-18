@@ -1,0 +1,51 @@
+*   List A item 1
+*   *   List A item 2-1
+    *   List A item 2-2
+    *   List A item 2-3
+    *   List A item 2-4
+*   List A item 3
+*   *   List A item 4-1
+
+    *   List A item 4-2
+
+    *   List A item 4-3
+
+    *   List A item 4-4
+
+
+same as above, different spacing
+--------------------------------
+
+*   List B item 1
+*   *   List B item 2-1
+    *   List B item 2-2
+*   List B item 3
+*   *   List B item 4-1
+
+    *   List B item 4-2
+
+
+only 1 item in nested list
+--------------------------
+
+*   List C item 1
+*   *   List C item 2-1
+*   List C item 3
+*   *   List C item 4-1
+
+
+Something ludicrous
+-------------------
+
+*   List D item 1
+*   *   List D item 2-1
+    *   List D item 2-2
+    *   *   List D item 2-2-1
+        *   List D item 2-2-2
+    *   List D item 2-3
+*   List D item 3
+*   *   List D item 4-1
+    *   *   List D item 4-1-1
+        *   List D item 4-1-2
+
+    *   List D item 4-2

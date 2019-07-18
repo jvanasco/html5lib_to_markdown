@@ -1,0 +1,216 @@
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import unittest
+import os
+
+import html5lib_to_markdown
+from html5lib_to_markdown.transformer import Transformer
+
+
+# ==============================================================================
+
+
+# if `True`, do not raise errors if the markdown file is missing.
+# used for writing tests
+ALLOW_MISSING = bool(int(os.getenv('MD_TEST_ALLOW_MISSING', 0)))
+
+# print the markdown
+PRINT_RESULTS = bool(int(os.getenv('MD_TEST_PRINT_RESULTS', 0)))
+
+
+# ==============================================================================
+
+
+_dir_base = os.path.dirname(__file__)
+_dir_fixtures = os.path.join(_dir_base, 'fixtures-transformations')
+
+
+def _get_test_data(filestring):
+    _fpath_html = os.path.join(_dir_fixtures, "%s.html" % filestring)
+    _fpath_md = os.path.join(_dir_fixtures, "%s.md" % filestring)
+    _html = _md = ''
+    with open(_fpath_html, 'r') as fh:
+        _html = fh.read()
+    try:
+        with open(_fpath_md, 'r') as fh:
+            _md = fh.read()
+    except Exception as exc:
+        if not ALLOW_MISSING:
+            raise
+    return (_html, _md)
+
+
+def _get_test_data_alt(filestring, alt):
+    _fpath_md = os.path.join(_dir_fixtures, "%s--%s.md" % (filestring, alt))
+    _md = ''
+    try:
+        with open(_fpath_md, 'r') as fh:
+            _md = fh.read()
+    except Exception as exc:
+        if not ALLOW_MISSING:
+            raise
+    return _md
+
+
+# ==============================================================================
+
+
+class _TestTransformations(object):
+    """
+    to create a new test:
+
+        1. create a matched md/html pairing in `./fixtures-transformations/`
+        2. create a test stub in this class
+
+    Example:
+
+    html:  ./fixtures-transformations/0047-example.html
+    md:    ./fixtures-transformations/0047-example.md
+    stub:
+            def test_0047(self):
+                self._test_actual('0047-example')
+
+    this will create a test for `html > markdown` and `markdown > html`
+
+    """
+
+    def _makeOne(self, **kwargs_override):
+        kwargs_default = {
+            'a_as_tag': False,
+            'img_as_tag': False,
+            'strip_comments': False,
+            'strip_scripts': True,
+            'reference_style_link': False,
+        }
+        kwargs = dict(list(kwargs_default.items()) + list(kwargs_override.items()))
+        transformer = Transformer(**kwargs)
+        return transformer
+
+    def _test_html_to_markdown(self, filename_base, extra_tests=None):
+        (_html,
+         _md
+         ) = _get_test_data(filename_base)
+        transformer = self._makeOne()
+        _result = transformer.transform(_html)
+        if PRINT_RESULTS:
+            print("=" * 80)
+            print(filename_base)
+            print("- " * 20)
+            print(_result)
+            print("=" * 80)
+        self.assertEqual(_md, _result)
+        if extra_tests:
+            if 'strip_scripts=False' in extra_tests:
+                _md_2 = _get_test_data_alt(filename_base, 'strip_scripts=False')
+                _transformer = self._makeOne(strip_scripts=False)
+                _result = _transformer.transform(_html)
+                if PRINT_RESULTS:
+                    print("=" * 80)
+                    print(filename_base, 'strip_scripts=False')
+                    print("- " * 20)
+                    print(_result)
+                    print("=" * 80)
+                self.assertEqual(_md_2, _result)
+
+    def _test_markdown_to_markdown(self, filename_base, extra_tests=None):
+        (_html,
+         _md
+         ) = _get_test_data(filename_base)
+        transformer = self._makeOne()
+        _result = transformer.transform(_md)
+        self.assertEqual(_md, _result)
+
+    def test_0001(self):
+        self._test_actual('0001-simple')
+
+    def test_0002(self):
+        self._test_actual('0002-p_header')
+
+    def test_0003(self):
+        self._test_actual('0003-p_header_alt')
+
+    def test_0004(self):
+        self._test_actual('0004-blockquote_nested_a')
+
+    def test_0005(self):
+        self._test_actual('0005-code')
+
+    def test_0006(self):
+        self._test_actual('0006-blockquote_nested_lists')
+
+    def test_0007(self):
+        self._test_actual('0007-ends_on_hr')
+
+    def test_0008(self):
+        self._test_actual('0008-ends_on_hr_br')
+
+    def test_0009(self):
+        self._test_actual('0009-pre_code_pre')
+
+    def test_0010(self):
+        self._test_actual('0010-whitespace')
+
+    def test_0011(self):
+        self._test_actual('0011-blockquote_spacing')
+
+    def test_0012(self):
+        self._test_actual('0012-heading')
+
+    def test_0013(self):
+        self._test_actual('0013-p_simple')
+
+    def test_0014(self):
+        self._test_actual('0014-hr_code')
+
+    def test_0015(self):
+        self._test_actual('0015-nest_list_simple')
+
+    def test_0016(self):
+        self._test_actual('0016-pre_code')
+
+    def test_0017(self):
+        self._test_actual('0017-script', ['strip_scripts=False'])
+
+    def test_0018(self):
+        self._test_actual('0018-blockquoted_things')
+
+    def test_0019(self):
+        self._test_actual('0019-improper_nests')
+
+    def test_0020(self):
+        self._test_actual('0020-blockquoted_things_alt')
+
+    def test_0021(self):
+        self._test_actual('0021-blockquoted_things_alt_2')
+
+    def test_0022(self):
+        self._test_actual('0022-nested')
+
+    def test_0023(self):
+        self._test_actual('0023-links')
+
+    # ---
+
+    def test_0097(self):
+        self._test_actual('0097-involved')
+
+    def test_0098(self):
+        self._test_actual('0098-involved')
+
+    def test_0099(self):
+        self._test_actual('0099-involved')
+
+    # ---
+
+    def test_flow_0001(self):
+        self._test_actual('flow_0001')
+
+
+class TestHtmlToMarkdown(unittest.TestCase, _TestTransformations):
+    _test_actual = _TestTransformations._test_html_to_markdown
+
+
+if False:
+    class TestMarkdownToMarkdown(unittest.TestCase, _TestTransformations):
+        _test_actual = _TestTransformations._test_markdown_to_markdown

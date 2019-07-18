@@ -1,0 +1,22 @@
+Tight List:
+
+Face it: if you use headers nested inside of lists, you will get exactly what you deserve.
+
+*   # Header1 #
+    Line 1-2 - **not** a header *or* paragraph!
+*   ## Header2 ##
+    Line 2-2 - not a header or paragraph!
+
+Loose List:
+
+*   # Header1 #
+
+    Line 1-2 - *a* paragraph
+
+*   ## Header2 ##
+
+    Line 2-2 - a paragraph
+
+*   ### Header3 ###
+
+    Line 3-2 - a paragraph

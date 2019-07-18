@@ -1,0 +1,16 @@
+Tests are organized as follows:
+
+	tests_unit/
+		unit tests, can be invoked from `setup.py`
+
+	tests_integrated
+		integrated tests, requires spinning up a server
+
+
+Recommended debug settings
+
+	export MD_DEBUG_STACKS_SIMPLE=1
+	export MD_DEBUG_STACKS=1
+	export MD_DEBUG_TOKENS=1
+	export MD_TEST_PRINT_RESULTS=1
+	 
