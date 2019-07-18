@@ -1,8 +1,9 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import unittest
 import os
+import pdb
+import unittest
 
 import html5lib_to_markdown
 from html5lib_to_markdown.transformer import Transformer
@@ -78,7 +79,9 @@ class _TestTransformations(object):
     def _makeOne(self, **kwargs_override):
         kwargs_default = {
             'a_as_tag': False,
+            'a_simple_links': False,
             'img_as_tag': False,
+            'parse_markdown_simplelink': True,
             'strip_comments': False,
             'strip_scripts': True,
             'reference_style_link': False,
@@ -112,6 +115,29 @@ class _TestTransformations(object):
                     print(_result)
                     print("=" * 80)
                 self.assertEqual(_md_2, _result)
+            if 'parse_markdown_simplelink=False' in extra_tests:
+                _md_2 = _get_test_data_alt(filename_base, 'parse_markdown_simplelink=False')
+                _transformer = self._makeOne(parse_markdown_simplelink=False)
+                _result = _transformer.transform(_html)
+                if PRINT_RESULTS:
+                    print("=" * 80)
+                    print(filename_base, 'parse_markdown_simplelink=False')
+                    print("- " * 20)
+                    print(_result)
+                    print("=" * 80)
+                self.assertEqual(_md_2, _result)
+            if 'a_simple_links=True' in extra_tests:
+                _md_2 = _get_test_data_alt(filename_base, 'a_simple_links=True')
+                _transformer = self._makeOne(a_simple_links=True)
+                _result = _transformer.transform(_html)
+                if PRINT_RESULTS:
+                    print("=" * 80)
+                    print(filename_base, 'a_simple_links=True')
+                    print("- " * 20)
+                    print(_result)
+                    print("=" * 80)
+                self.assertEqual(_md_2, _result)
+
 
     def _test_markdown_to_markdown(self, filename_base, extra_tests=None):
         (_html,
@@ -170,7 +196,7 @@ class _TestTransformations(object):
         self._test_actual('0016-pre_code')
 
     def test_0017(self):
-        self._test_actual('0017-script', ['strip_scripts=False'])
+        self._test_actual('0017-script', ['strip_scripts=False', ])
 
     def test_0018(self):
         self._test_actual('0018-blockquoted_things')
@@ -188,7 +214,7 @@ class _TestTransformations(object):
         self._test_actual('0022-nested')
 
     def test_0023(self):
-        self._test_actual('0023-links')
+        self._test_actual('0023-links', ['a_simple_links=True', ])
 
     # ---
 
@@ -199,7 +225,7 @@ class _TestTransformations(object):
         self._test_actual('0098-involved')
 
     def test_0099(self):
-        self._test_actual('0099-involved')
+        self._test_actual('0099-involved', ['a_simple_links=True', 'parse_markdown_simplelink=False', ])
 
     # ---
 

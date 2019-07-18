@@ -18,13 +18,13 @@ log = logging.getLogger(__name__)
 
 # pypi
 import six
-import bleach._vendor.html5lib
-from bleach._vendor.html5lib import constants
-from bleach._vendor.html5lib import HTMLParser
-from bleach._vendor.html5lib import getTreeWalker
-from bleach._vendor.html5lib.serializer import HTMLSerializer
-from bleach._vendor.html5lib.filters.base import Filter
-from bleach._vendor.html5lib.constants import tokenTypes
+import html5lib
+from html5lib import constants
+from html5lib import HTMLParser
+from html5lib import getTreeWalker
+from html5lib.serializer import HTMLSerializer
+from html5lib.filters.base import Filter
+from html5lib.constants import tokenTypes
 
 # local
 from .markdown_info import MARKDOWN_TAGS_CORE
@@ -358,6 +358,7 @@ def to_markdown(
     dom_walker,
     a_as_tag=True,
     a_simple_links=True,
+    parse_markdown_simplelink=True,
     img_as_tag=True,
     strip_comments=False,
     strip_scripts=True,
@@ -390,6 +391,9 @@ def to_markdown(
     "<https://example.com/path/to>".  If ``True``, the simple link format will
     be utilized for self-linking links; otherwise they will be rendered based on
     the selected ``a_as_tag`` rule.  default ``True``
+    
+    :arg bool parse_markdown_simplelink: Allow a Markdown simplelink in the 
+    parsed HTML.  These parse a bit oddly, but hey.  default ``True``.
 
     :arg bool img_as_tag: Should images be rendered as a HTML
     tag or in markdown syntax? default ``True``
@@ -669,7 +673,7 @@ def to_markdown(
                                 _title = safe_title(_value)
 
                         if a_simple_links:
-                            if not _link_text or (_link_text == _href):
+                            if (not _link_text or (_link_text == _href)) and (not _title):
                                 return TokenAMarkdownSimple(_href)
 
                         if reference_style_link:
@@ -766,40 +770,58 @@ def to_markdown(
                     return _token
 
             elif name in ('https:', 'http:'):
-                # note: bare url, bug-ish
-                # note: the htmllib5 parser will pull this as-
-                #      `name``: domain
-                #      `data`: elements of the path in an OrderedDict
-                if ttype == tt_StartTag:
-                    _path_components = token.get('data').items()
-                    if len(_path_components) == 1:
-                        _path = _path_components
+                if parse_markdown_simplelink:
+                    # note: bare url, bug-ish
+                    # note: the htmllib5 parser will pull this as-
+                    #      `name``: domain
+                    #      `data`: elements of the path in an OrderedDict
+                    if ttype == tt_StartTag:
+                        _path_components = list(token.get('data').items())
+                        if len(_path_components) == 1:
+                            _path = _path_components
+                        else:
+                            # !!!: this bit is weird. 
+                            if six.PY2:
+                                _path = [_path_components[1], _path_components[0], ]
+                                if len(_path_components) > 2:
+                                    _path.extend(_path_components[2:])
+                            else:
+                                _path = _path_components
+                        _url_reconstructed = '%s//%s' % (name, '/'.join(i[0][1] for i in _path))
+                        if _path[-1][1]:
+                            _url_reconstructed += "=" + _path[-1][1]
+
+                        if a_simple_links:
+                            return TokenAMarkdownSimple(_url_reconstructed)
+
+                        if a_as_tag:
+                            return (TokenAStartTag,
+                                    _url_reconstructed,
+                                    TokenAEndTag
+                                    )
+                        return TokenAMarkdown(_url_reconstructed, _url_reconstructed)
                     else:
-                        _path = [_path_components[1], _path_components[0], ]
-                        if len(_path_components) > 2:
-                            _path.extend(_path_components[2:])
-                    _url_reconstructed = '%s//%s' % (name, '/'.join(i[0][1] for i in _path))
-                    if a_as_tag:
-                        return (TokenAStartTag,
-                                _url_reconstructed,
-                                TokenAEndTag
-                                )
-                    return TokenAMarkdown(_url_reconstructed, _url_reconstructed)
+                        return None
                 else:
                     return None
 
             else:
                 if name.startswith('mailto:'):
-                    # note: mailto link
-                    # this is a bare mailto
-                    if ttype == tt_StartTag:
-                        _address = name
-                        if a_as_tag:
-                            return (TokenAStartTag,
-                                    _address,
-                                    TokenAEndTag
-                                    )
-                        return TokenAMarkdown(_address, _address[7:])
+                    if parse_markdown_simplelink:
+                        # note: mailto link
+                        # this is a bare mailto
+                        if ttype == tt_StartTag:
+                            _address = name
+                            if a_simple_links:
+                                return TokenAMarkdownSimple(_address)
+                            if a_as_tag:
+                                return (TokenAStartTag,
+                                        _address,
+                                        TokenAEndTag
+                                        )
+                            return TokenAMarkdown(_address, _address[7:])
+                        else:
+                            return None
                     else:
                         return None
 
@@ -1361,6 +1383,8 @@ class Transformer(object):
     _serializer = None
 
     _a_as_tag = None
+    _a_simple_links = None
+    _parse_markdown_simplelink = None
     _img_as_tag = None
     _strip_comments = None
     _strip_scripts = None
@@ -1378,6 +1402,7 @@ class Transformer(object):
 
         a_as_tag = True,
         a_simple_links = True,
+        parse_markdown_simplelink = True,
         img_as_tag = True,
 
         strip_comments = False,
@@ -1409,6 +1434,7 @@ class Transformer(object):
 
         :arg bool a_as_tag: see ``to_markdown``
         :arg bool a_simple_links: see ``to_markdown``
+        :arg bool parse_markdown_simplelink: see ``to_markdown``
         :arg bool img_as_tag: see ``to_markdown``
         :arg bool strip_comments: see ``to_markdown``
         :arg bool strip_scripts: see ``to_markdown``
@@ -1433,6 +1459,7 @@ class Transformer(object):
 
         self._a_as_tag = a_as_tag
         self._a_simple_links = a_simple_links
+        self._parse_markdown_simplelink = parse_markdown_simplelink
         self._img_as_tag = img_as_tag
         self._reference_style_link = reference_style_link
         self._reference_style_img = reference_style_img
@@ -1505,6 +1532,7 @@ class Transformer(object):
             self._walker(dom),
             a_as_tag=self._a_as_tag,
             a_simple_links=self._a_simple_links,
+            parse_markdown_simplelink=self._parse_markdown_simplelink,
             img_as_tag=self._img_as_tag,
             strip_comments=self._strip_comments,
             strip_scripts=self._strip_scripts,
@@ -1551,6 +1579,7 @@ class Transformer(object):
             self._walker(dom),
             a_as_tag=self._a_as_tag,
             a_simple_links=self._a_simple_links,
+            parse_markdown_simplelink=self._parse_markdown_simplelink,
             img_as_tag=self._img_as_tag,
             strip_comments=self._strip_comments,
             strip_scripts=self._strip_scripts,
