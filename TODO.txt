@@ -37,6 +37,24 @@ Identified Tasks
 6. strip attributes from html tags and/or use a callable function like bleach
 
 
+Done
+====
+
+## Local Markdown Links
+
+The form of absolute links is supported:
+
+	<https://example.com/path/to>
+
+However, local links in this form WILL NOT be supported:
+
+	</path/to>
+
+This is because they look like end tags and html5lib parses them as such.
+
+Correctly supporting this would be a major undertaking.
+
+
 Misc Readings for Reference
 ===========================
 
