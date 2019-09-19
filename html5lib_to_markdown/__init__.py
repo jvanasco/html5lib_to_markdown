@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-__VERSION__ = '0.0.1'
+__VERSION__ = "0.0.2rc"
 
 
 from html5lib_to_markdown.transformer import Transformer
@@ -29,11 +29,12 @@ def transform(text):
 # ==============================================================================
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     if len(sys.argv) == 2:
         fname = sys.argv[1]
-        with open(fname, 'r') as fp:
+        with open(fname, "r") as fp:
             input = fp.read()
         print("=" * 80)
         print(transform(input))

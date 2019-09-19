@@ -1,6 +1,7 @@
 from __future__ import print_function
 from __future__ import unicode_literals
-'''
+
+"""
 This file contains replacement html5lib Tokens.
 Tokens are just Python dicts.
 
@@ -45,7 +46,7 @@ currently these tags are considered block elements:
     script
     blockquote
 
-'''
+"""
 
 # stdlib
 from collections import OrderedDict
@@ -58,7 +59,7 @@ from .utils import safe_title
 # ==============================================================================
 
 
-DEBUG_TOKENS = bool(int(os.getenv('MD_DEBUG_TOKENS', 0)))
+DEBUG_TOKENS = bool(int(os.getenv("MD_DEBUG_TOKENS", 0)))
 
 
 # ==============================================================================
@@ -67,32 +68,32 @@ DEBUG_TOKENS = bool(int(os.getenv('MD_DEBUG_TOKENS', 0)))
 # use INTs for faster comparison of our '_md_type'
 # unless `export MD_DEBUG_TOKENS=1` is set
 mdTokenTypes = {
-    'TokenAMarkdown': 1,
-    'TokenAMarkdownReference': 2,
-    'TokenAMarkdownSimple': 3,
-    'TokenBoldItalic': 4,
-    'TokenCharactersAdded': 5,
-    'TokenCharactersSplit': 6,
-    'TokenDebug': 7,
-    'TokenEmphasis': 8,
-    'TokenEndBlockElement': 9,
-    'TokenEndBlockquote': 10,
-    'TokenEndBlockNative': 11,
-    'TokenEndCode': 12,
-    'TokenHNStart': 13,
-    'TokenHR': 14,
-    'TokenImgMarkdown': 15,
-    'TokenLiStart': 16,
-    'TokenNewline': 17,
-    'TokenNewlineBR': 18,
-    'TokenNewlines': 19,
-    'TokenSpace': 20,
-    'TokenStartBlockElement': 21,
-    'TokenStartBlockquote': 22,
-    'TokenStartBlockNative': 23,
-    'TokenStartCode': 24,
-    'TokenStrong': 25,
-    'TokenTab': 26,
+    "TokenAMarkdown": 1,
+    "TokenAMarkdownReference": 2,
+    "TokenAMarkdownSimple": 3,
+    "TokenBoldItalic": 4,
+    "TokenCharactersAdded": 5,
+    "TokenCharactersSplit": 6,
+    "TokenDebug": 7,
+    "TokenEmphasis": 8,
+    "TokenEndBlockElement": 9,
+    "TokenEndBlockquote": 10,
+    "TokenEndBlockNative": 11,
+    "TokenEndCode": 12,
+    "TokenHNStart": 13,
+    "TokenHR": 14,
+    "TokenImgMarkdown": 15,
+    "TokenLiStart": 16,
+    "TokenNewline": 17,
+    "TokenNewlineBR": 18,
+    "TokenNewlines": 19,
+    "TokenSpace": 20,
+    "TokenStartBlockElement": 21,
+    "TokenStartBlockquote": 22,
+    "TokenStartBlockNative": 23,
+    "TokenStartCode": 24,
+    "TokenStrong": 25,
+    "TokenTab": 26,
 }
 if DEBUG_TOKENS:
     for k in list(mdTokenTypes.keys()):
@@ -102,22 +103,21 @@ if DEBUG_TOKENS:
 
 
 def TokenAEndTag(href):
-    return {'type': 'EndTag',
-            'name': 'a',
-            }
+    return {"type": "EndTag", "name": "a"}
 
 
 def TokenAMarkdown(href, _link_text, title=None, reference=None):
     title = safe_title(title)
-    title = ' "%s"' % title if title else ''
+    title = ' "%s"' % title if title else ""
     if reference is not None:
         data = "[%s][%s]" % (_link_text, reference)
     else:
         data = "[%s](%s%s)" % (_link_text, href, title)
-    token = {'type': 'Characters',
-             'data': data,
-             '_md_type': mdTokenTypes['TokenAMarkdown'],
-             }
+    token = {
+        "type": "Characters",
+        "data": data,
+        "_md_type": mdTokenTypes["TokenAMarkdown"],
+    }
     return token
 
 
@@ -128,13 +128,14 @@ def TokenAMarkdownReference(href, reference, title=None):
 
     <a href="https://example.com" title="Title">link text</a>
     """
-    title = ' "%s"' % title if title else ''
+    title = ' "%s"' % title if title else ""
     data = "[%s]: %s%s" % (reference, href, title)
 
-    token = {'type': 'Characters',
-             'data': data,
-             '_md_type': mdTokenTypes['TokenAMarkdownReference'],
-             }
+    token = {
+        "type": "Characters",
+        "data": data,
+        "_md_type": mdTokenTypes["TokenAMarkdownReference"],
+    }
     return token
 
 
@@ -142,65 +143,72 @@ def TokenAMarkdownSimple(href):
     """
     <https://example.com>
     """
-    token = {'type': 'EmptyTag',
-             'name': href,
-             'data': {},
-             '_md_type': mdTokenTypes['TokenAMarkdownSimple'],
-             }
+    token = {
+        "type": "EmptyTag",
+        "name": href,
+        "data": {},
+        "_md_type": mdTokenTypes["TokenAMarkdownSimple"],
+    }
     return token
 
 
 def TokenAStartTag(href):
-    return {'type': u'StartTag',
-            'name': 'a',
-            'data': OrderedDict([((None, 'href'), href)])
-            }
+    return {
+        "type": "StartTag",
+        "name": "a",
+        "data": OrderedDict([((None, "href"), href)]),
+    }
 
 
-def TokenBoldItalic(character='_'):
+def TokenBoldItalic(character="_"):
     """
     Bold & Italic (`<i><b>`, `<em><strong>`) text is rendered with three underscores or asterisks
     """
-    assert character in ('_', '*')
-    return {'type': 'Characters',
-            'data': character * 3,
-            '_md_type': mdTokenTypes['TokenBoldItalic'],
-            }
+    assert character in ("_", "*")
+    return {
+        "type": "Characters",
+        "data": character * 3,
+        "_md_type": mdTokenTypes["TokenBoldItalic"],
+    }
 
 
-def TokenCharactersAdded(data=''):
-    return {'type': 'Characters',
-            'data': data,
-            '_md_type': mdTokenTypes['TokenCharactersAdded'],
-            }
+def TokenCharactersAdded(data=""):
+    return {
+        "type": "Characters",
+        "data": data,
+        "_md_type": mdTokenTypes["TokenCharactersAdded"],
+    }
 
 
-def TokenCharactersSplit(data=''):
-    return {'type': 'Characters',
-            'data': data,
-            '_md_type': mdTokenTypes['TokenCharactersSplit'],
-            }
+def TokenCharactersSplit(data=""):
+    return {
+        "type": "Characters",
+        "data": data,
+        "_md_type": mdTokenTypes["TokenCharactersSplit"],
+    }
 
 
 def TokenDebug(_debug=None):
     """used to place debug info; this will not render
     """
-    return {'type': 'SpaceCharacters',
-            'data': '',
-            '_md_type': mdTokenTypes['TokenDebug'],
-            '_md_debug': _debug,
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": "",
+        "_md_type": mdTokenTypes["TokenDebug"],
+        "_md_debug": _debug,
+    }
 
 
-def TokenEmphasis(character='_'):
+def TokenEmphasis(character="_"):
     """
     Italic (`<i>`, `<em>`) text is rendered with one asterisk or underscore
     """
-    assert character in ('_', '*')
-    return {'type': 'Characters',
-            'data': character,
-            '_md_type': mdTokenTypes['TokenEmphasis'],
-            }
+    assert character in ("_", "*")
+    return {
+        "type": "Characters",
+        "data": character,
+        "_md_type": mdTokenTypes["TokenEmphasis"],
+    }
 
 
 def TokenEndBlockElement(block):
@@ -208,11 +216,12 @@ def TokenEndBlockElement(block):
     `TokenEndBlockElement` is used to denote that we are ending a block element.
     Under most circumstances, this token will not render anything.
     """
-    return {'type': 'SpaceCharacters',
-            'data': '',
-            '_md_type': mdTokenTypes['TokenEndBlockElement'],
-            '_md_debug': block,
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": "",
+        "_md_type": mdTokenTypes["TokenEndBlockElement"],
+        "_md_debug": block,
+    }
 
 
 def TokenEndBlockquote(depth=1):
@@ -220,11 +229,12 @@ def TokenEndBlockquote(depth=1):
     `TokenEndBlockquote` is used to denote that we are ending a blockquote.
     This token will not render anything.
     """
-    return {'type': 'SpaceCharacters',
-            'data': '',
-            '_md_type': mdTokenTypes['TokenEndBlockquote'],
-            '_md_depth': depth,
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": "",
+        "_md_type": mdTokenTypes["TokenEndBlockquote"],
+        "_md_depth": depth,
+    }
 
 
 def TokenEndCode():
@@ -232,44 +242,48 @@ def TokenEndCode():
     `TokenEndCode` is used to denote that we are ending a `code` tag.
     The render type (inline, indented) is unknown
     """
-    return {'type': 'SpaceCharacters',
-            'data': '',
-            '_md_type': mdTokenTypes['TokenEndCode'],
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": "",
+        "_md_type": mdTokenTypes["TokenEndCode"],
+    }
 
 
 def TokenHNStart(h_num):
-    token = {'type': 'Characters',
-             'data': '\n%s ' % ('#' * h_num),
-             '_md_hn': h_num,
-             '_md_type': mdTokenTypes['TokenHNStart'],
-             }
+    token = {
+        "type": "Characters",
+        "data": "\n%s " % ("#" * h_num),
+        "_md_hn": h_num,
+        "_md_type": mdTokenTypes["TokenHNStart"],
+    }
     return token
 
 
 def TokenHR():
-    return {'type': 'Characters',
-            'data': '\n---\n',
-            '_md_type': mdTokenTypes['TokenHR'],
-            }
+    return {
+        "type": "Characters",
+        "data": "\n---\n",
+        "_md_type": mdTokenTypes["TokenHR"],
+    }
 
 
 def TokenImgMarkdown(src, alt=None, title=None, reference=None):
-    alt = alt or 'Image'
-    title = ' "%s"' % title if title else ''
+    alt = alt or "Image"
+    title = ' "%s"' % title if title else ""
     if reference is not None:
         data = "[%s][%s]" % (alt, reference)
     else:
         data = "![%s](%s%s)" % (alt, src, title)
-    token = {'type': 'Characters',
-             'data': data,
-             '_md_type': mdTokenTypes['TokenImgMarkdown'],
-             }
+    token = {
+        "type": "Characters",
+        "data": data,
+        "_md_type": mdTokenTypes["TokenImgMarkdown"],
+    }
     return token
 
 
-def TokenLiStart(depth=0, bullet='*'):
-    if bullet in ('*', '+', '-'):
+def TokenLiStart(depth=0, bullet="*"):
+    if bullet in ("*", "+", "-"):
         pass
     else:
         if type(bullet) != int:
@@ -277,44 +291,48 @@ def TokenLiStart(depth=0, bullet='*'):
         bullet = "%s." % bullet
     indent = depth - 1 if depth >= 1 else 0
     token = {
-        'type': 'Characters',
-        'data': '\n%s%s ' % ("  " * indent, bullet),
-        '_md_type': mdTokenTypes['TokenLiStart'],
-        '_md_list_depth': indent,
+        "type": "Characters",
+        "data": "\n%s%s " % ("  " * indent, bullet),
+        "_md_type": mdTokenTypes["TokenLiStart"],
+        "_md_list_depth": indent,
     }
     return token
 
 
-def TokenNewline(blockquoted=None, codeblocked=None, ):
-    return {'type': 'SpaceCharacters',
-            'data': '\n',
-            '_md_type': mdTokenTypes['TokenNewline'],
-            '_md_bq': blockquoted,
-            '_md_cb': codeblocked,
-            }
+def TokenNewline(blockquoted=None, codeblocked=None):
+    return {
+        "type": "SpaceCharacters",
+        "data": "\n",
+        "_md_type": mdTokenTypes["TokenNewline"],
+        "_md_bq": blockquoted,
+        "_md_cb": codeblocked,
+    }
 
 
 def TokenNewlineBR():
-    return {'type': 'SpaceCharacters',
-            'data': '\n',
-            '_md_type': mdTokenTypes['TokenNewlineBR'],
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": "\n",
+        "_md_type": mdTokenTypes["TokenNewlineBR"],
+    }
 
 
 def TokenNewlines(blockquoted=None, codeblocked=None):
-    return {'type': 'SpaceCharacters',
-            'data': '\n\n',
-            '_md_type': mdTokenTypes['TokenNewlines'],
-            '_md_bq': blockquoted,
-            '_md_cb': codeblocked,
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": "\n\n",
+        "_md_type": mdTokenTypes["TokenNewlines"],
+        "_md_bq": blockquoted,
+        "_md_cb": codeblocked,
+    }
 
 
 def TokenSpace():
-    return {'type': 'SpaceCharacters',
-            'data': ' ',
-            '_md_type': mdTokenTypes['TokenSpace'],
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": " ",
+        "_md_type": mdTokenTypes["TokenSpace"],
+    }
 
 
 def TokenStartBlockElement(block):
@@ -322,11 +340,12 @@ def TokenStartBlockElement(block):
     `TokenStartBlockElement` is used to denote that we are starting a new block element.
     Under most circumstances, this token will not render anything.
     """
-    return {'type': 'SpaceCharacters',
-            'data': '',
-            '_md_type': mdTokenTypes['TokenStartBlockElement'],
-            '_md_block': block,
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": "",
+        "_md_type": mdTokenTypes["TokenStartBlockElement"],
+        "_md_block": block,
+    }
 
 
 def TokenStartBlockquote(depth=1):
@@ -334,11 +353,12 @@ def TokenStartBlockquote(depth=1):
     `TokenStartBlockquote` is used to denote that we are starting a new blockquote
     Under most circumstances, this token will not render anything.
     """
-    return {'type': 'SpaceCharacters',
-            'data': '',
-            '_md_type': mdTokenTypes['TokenStartBlockquote'],
-            '_md_depth': depth,
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": "",
+        "_md_type": mdTokenTypes["TokenStartBlockquote"],
+        "_md_depth": depth,
+    }
 
 
 def TokenStartCode():
@@ -346,58 +366,61 @@ def TokenStartCode():
     `TokenStartCode` is used to denote that we are starting a new `code` tag.
     The render type (inline, indented) is unknown
     """
-    return {'type': 'Characters',
-            'data': '',
-            '_md_type': mdTokenTypes['TokenStartCode'],
-            }
+    return {
+        "type": "Characters",
+        "data": "",
+        "_md_type": mdTokenTypes["TokenStartCode"],
+    }
 
 
-def TokenStrong(character='*'):
+def TokenStrong(character="*"):
     """
     Bold (`<b>`, `<strong>`) text is rendered with two asterisks or underscores
     """
-    assert character in ('*', '_')
-    return {'type': 'Characters',
-            'data': '*' * 2,
-            '_md_type': mdTokenTypes['TokenStrong'],
-            }
+    assert character in ("*", "_")
+    return {
+        "type": "Characters",
+        "data": "*" * 2,
+        "_md_type": mdTokenTypes["TokenStrong"],
+    }
 
 
 def TokenTab():
-    return {'type': 'SpaceCharacters',
-            'data': '\t',
-            '_md_type': mdTokenTypes['TokenTab'],
-            }
+    return {
+        "type": "SpaceCharacters",
+        "data": "\t",
+        "_md_type": mdTokenTypes["TokenTab"],
+    }
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 __all__ = (
-    'mdTokenTypes',
-    'TokenAEndTag',
-    'TokenAMarkdown',
-    'TokenAMarkdownReference',
-    'TokenAMarkdownSimple',
-    'TokenAStartTag',
-    'TokenCharactersAdded',
-    'TokenCharactersSplit',
-    'TokenDebug',
-    'TokenEmphasis',
-    'TokenEndBlockElement',
-    'TokenEndBlockquote',
-    'TokenEndCode',
-    'TokenHNStart',
-    'TokenHR',
-    'TokenImgMarkdown',
-    'TokenLiStart',
-    'TokenNewline',
-    'TokenNewlineBR',
-    'TokenNewlines',
-    'TokenSpace',
-    'TokenStartBlockElement',
-    'TokenStartBlockquote',
-    'TokenStartCode',
-    'TokenStrong',
-    'TokenTab',
+    "mdTokenTypes",
+    "TokenAEndTag",
+    "TokenAMarkdown",
+    "TokenAMarkdownReference",
+    "TokenAMarkdownSimple",
+    "TokenAStartTag",
+    "TokenCharactersAdded",
+    "TokenCharactersSplit",
+    "TokenDebug",
+    "TokenEmphasis",
+    "TokenEndBlockElement",
+    "TokenEndBlockquote",
+    "TokenEndCode",
+    "TokenHNStart",
+    "TokenHR",
+    "TokenImgMarkdown",
+    "TokenLiStart",
+    "TokenNewline",
+    "TokenNewlineBR",
+    "TokenNewlines",
+    "TokenSpace",
+    "TokenStartBlockElement",
+    "TokenStartBlockquote",
+    "TokenStartCode",
+    "TokenStrong",
+    "TokenTab",
 )
