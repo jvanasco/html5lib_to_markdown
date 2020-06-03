@@ -14,14 +14,14 @@ README = README.split("\n\n", 1)[0] + "\n"
 with open(
     os.path.join(os.path.dirname(__file__), "html5lib_to_markdown", "__init__.py")
 ) as v_file:
-    VERSION = re.compile(r".*__VERSION__ = '(.*?)'", re.S).match(v_file.read()).group(1)
+    VERSION = re.compile(r'.*__VERSION__ = "(.*?)"', re.S).match(v_file.read()).group(1)
 
 
 install_requires = [
     "html5lib",
     "bleach",
     # 'frozendict',
-    # 'six',
+    'six',
 ]
 tests_require = []
 
