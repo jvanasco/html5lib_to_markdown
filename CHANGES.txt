@@ -1,3 +1,7 @@
+unreleased
+	* upgraded black
+	* integrated with pre-commit
+
 0.0.2
 	black formatting
 
