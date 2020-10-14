@@ -22,16 +22,9 @@ _em_
 
 <a href='https://example.com/target=blank'>![Image](/img_in_a.png)</a>
 
-<https://example.com>
-<https://example.com/path>
-<https://example.com/path/to>
-<https://example.com/path/to?args=foo>
-<https://example.com/path/to?args=foo#hash>
-<https://example.com/path/to?args=foo&bar=biz>
-<https://example.com/path/to?args=foo&bar=biz#hash>
+<!-- test angled links moved to 0024-angled_link.html -->
 
 [email me](mailto:friend@example.com)
-<mailto:friend@example.com>
 
 <!-- comment here! -->
 <!-- comment here too ! | foo="bar" data-foo="[goo]" -->

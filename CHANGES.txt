@@ -1,6 +1,7 @@
 unreleased
 	* upgraded black
 	* integrated with pre-commit
+	* github actions
 
 0.0.2
 	black formatting

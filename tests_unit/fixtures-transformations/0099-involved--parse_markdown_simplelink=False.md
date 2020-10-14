@@ -22,6 +22,8 @@ _em_
 
 <a href='https://example.com/target=blank'>![Image](/img_in_a.png)</a>
 
+<!-- test angled links moved to 0024-angled_link.html -->
+
 [email me](mailto:friend@example.com)
 
 <!-- comment here! -->

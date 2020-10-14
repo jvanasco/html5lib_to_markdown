@@ -1,9 +1,9 @@
 from __future__ import print_function
 
-__VERSION__ = "0.0.2rc"
+__VERSION__ = "0.0.3rc"
 
 
-from html5lib_to_markdown.transformer import Transformer
+from .transformer import Transformer
 
 
 # ==============================================================================

@@ -9,12 +9,12 @@ import re
 # ==============================================================================
 
 
-RE_newlines_1p__full = re.compile("^\n+$")
-RE_newlines_2p__full = re.compile("^\n\n+$")
-RE_newlines_3p = re.compile("\n\n\n+")
-RE_space_tab_only = re.compile("^[\ \t]+$")
-RE_space_tab_p = re.compile("[\ \t]+")
-RE_whitespace_meh = re.compile("\n[\ \t]+(?![\d\*])")
+RE_newlines_1p__full = re.compile(r"^\n+$")
+RE_newlines_2p__full = re.compile(r"^\n\n+$")
+RE_newlines_3p = re.compile(r"\n\n\n+")
+RE_space_tab_only = re.compile(r"^[\ \t]+$")
+RE_space_tab_p = re.compile(r"[\ \t]+")
+RE_whitespace_meh = re.compile(r"\n[\ \t]+(?![\d\*])")
 
 
 # ==============================================================================

@@ -5,7 +5,6 @@ import os
 import pdb
 import unittest
 
-import html5lib_to_markdown
 from html5lib_to_markdown.transformer import Transformer
 
 
@@ -90,20 +89,25 @@ class _TestTransformations(object):
         transformer = Transformer(**kwargs)
         return transformer
 
-    def _test_html_to_markdown(self, filename_base, extra_tests=None):
-        (_html, _md) = _get_test_data(filename_base)
+    def _test_html_to_markdown(self, filename_base, extra_tests=None, fail_expected=None):
+        (_html, _md_expected) = _get_test_data(filename_base)
         transformer = self._makeOne()
         _result = transformer.transform(_html)
         if PRINT_RESULTS:
             print("=" * 80)
             print(filename_base)
-            print("- " * 20)
+            print("- " * 20, "_result")
             print(_result)
+            print("- " * 20, "_expected")
+            print(_md_expected)
             print("=" * 80)
-        self.assertEqual(_md, _result)
+        if fail_expected:
+            self.assertNotEqual(_md_expected, _result)
+        else:
+            self.assertEqual(_md_expected, _result)
         if extra_tests:
             if "strip_scripts=False" in extra_tests:
-                _md_2 = _get_test_data_alt(filename_base, "strip_scripts=False")
+                _md_expected_2 = _get_test_data_alt(filename_base, "strip_scripts=False")
                 _transformer = self._makeOne(strip_scripts=False)
                 _result = _transformer.transform(_html)
                 if PRINT_RESULTS:
@@ -112,9 +116,12 @@ class _TestTransformations(object):
                     print("- " * 20)
                     print(_result)
                     print("=" * 80)
-                self.assertEqual(_md_2, _result)
+                if fail_expected:
+                    self.assertNotEqual(_md_expected_2, _result)
+                else:
+                    self.assertEqual(_md_expected_2, _result)
             if "parse_markdown_simplelink=False" in extra_tests:
-                _md_2 = _get_test_data_alt(
+                _md_expected_2 = _get_test_data_alt(
                     filename_base, "parse_markdown_simplelink=False"
                 )
                 _transformer = self._makeOne(parse_markdown_simplelink=False)
@@ -125,9 +132,12 @@ class _TestTransformations(object):
                     print("- " * 20)
                     print(_result)
                     print("=" * 80)
-                self.assertEqual(_md_2, _result)
+                if fail_expected:
+                    self.assertNotEqual(_md_expected_2, _result)
+                else:
+                    self.assertEqual(_md_expected_2, _result)
             if "a_simple_links=True" in extra_tests:
-                _md_2 = _get_test_data_alt(filename_base, "a_simple_links=True")
+                _md_expected_2 = _get_test_data_alt(filename_base, "a_simple_links=True")
                 _transformer = self._makeOne(a_simple_links=True)
                 _result = _transformer.transform(_html)
                 if PRINT_RESULTS:
@@ -136,13 +146,16 @@ class _TestTransformations(object):
                     print("- " * 20)
                     print(_result)
                     print("=" * 80)
-                self.assertEqual(_md_2, _result)
+                if fail_expected:
+                    self.assertNotEqual(_md_expected_2, _result)
+                else:
+                    self.assertEqual(_md_expected_2, _result)
 
-    def _test_markdown_to_markdown(self, filename_base, extra_tests=None):
-        (_html, _md) = _get_test_data(filename_base)
+    def _test_markdown_to_markdown(self, filename_base, extra_tests=None, fail_expected=None):
+        (_html, _md_expected) = _get_test_data(filename_base)
         transformer = self._makeOne()
-        _result = transformer.transform(_md)
-        self.assertEqual(_md, _result)
+        _result = transformer.transform(_md_expected)
+        self.assertEqual(_md_expected, _result)
 
     def test_0001(self):
         self._test_actual("0001-simple")
@@ -212,6 +225,9 @@ class _TestTransformations(object):
 
     def test_0023(self):
         self._test_actual("0023-links", ["a_simple_links=True"])
+
+    def test_0024(self):
+        self._test_actual("0024-angled_link", fail_expected=True)
 
     # ---
 

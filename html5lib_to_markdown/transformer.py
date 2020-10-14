@@ -22,6 +22,7 @@ import six
 import html5lib
 from html5lib import constants
 from html5lib import HTMLParser
+from html5lib import getTreeBuilder
 from html5lib import getTreeWalker
 from html5lib.serializer import HTMLSerializer
 from html5lib.filters.base import Filter
@@ -494,6 +495,34 @@ def to_markdown(
     list_walker = [i for i in dom_walker]
     len_walker = len(list_walker)
 
+    def _handle_bare_link(name, token):
+        """this logic can be invoked in multiple places"""
+        _path_components = list(token.get("data").items())
+        if len(_path_components) == 1:
+            _path = _path_components
+        else:
+            # !!!: this bit is weird.
+            if six.PY2:
+                _path = [_path_components[1], _path_components[0]]
+                if len(_path_components) > 2:
+                    _path.extend(_path_components[2:])
+            else:
+                _path = _path_components
+        _url_reconstructed = "%s//%s" % (
+            name,
+            "/".join(i[0][1] for i in _path),
+        )
+        if _path[-1][1]:
+            _url_reconstructed += "=" + _path[-1][1]
+
+        if a_simple_links:
+            return TokenAMarkdownSimple(_url_reconstructed)
+
+        if a_as_tag:
+            return (TokenAStartTag, _url_reconstructed, TokenAEndTag)
+        return TokenAMarkdown(_url_reconstructed, _url_reconstructed)
+
+
     def possibly_nested(func):
         """
         This is a decorator used to stash the blockquote depth and prefix into
@@ -546,7 +575,7 @@ def to_markdown(
         # s/2: this is our casting
         ttype = tokenTypes.get(ttype, None)
         name = token.get("name")
-
+        
         # are we stripping script tags?
         if strip_scripts:
             if _in["_strip_script"]:
@@ -583,12 +612,15 @@ def to_markdown(
         if ttype in (tt_StartTag, tt_EndTag):
 
             # remove empty tags, which can be an artifact of the html5lib parser
+            # unless, they are a markdown link
             if ttype == tt_StartTag:
                 if (
                     token_next
                     and (token_next.get("type") == "EndTag")
                     and (token_next.get("name") == name)
                 ):
+                    if name in ("http:", "https:"):
+                        return _handle_bare_link(name, token)
                     return None
             elif ttype == tt_EndTag:
                 token_prev = list_walker[token_idx - 1] if token_idx > 0 else None
@@ -809,30 +841,7 @@ def to_markdown(
                     #      `name``: domain
                     #      `data`: elements of the path in an OrderedDict
                     if ttype == tt_StartTag:
-                        _path_components = list(token.get("data").items())
-                        if len(_path_components) == 1:
-                            _path = _path_components
-                        else:
-                            # !!!: this bit is weird.
-                            if six.PY2:
-                                _path = [_path_components[1], _path_components[0]]
-                                if len(_path_components) > 2:
-                                    _path.extend(_path_components[2:])
-                            else:
-                                _path = _path_components
-                        _url_reconstructed = "%s//%s" % (
-                            name,
-                            "/".join(i[0][1] for i in _path),
-                        )
-                        if _path[-1][1]:
-                            _url_reconstructed += "=" + _path[-1][1]
-
-                        if a_simple_links:
-                            return TokenAMarkdownSimple(_url_reconstructed)
-
-                        if a_as_tag:
-                            return (TokenAStartTag, _url_reconstructed, TokenAEndTag)
-                        return TokenAMarkdown(_url_reconstructed, _url_reconstructed)
+                        return _handle_bare_link(name, token)
                     else:
                         return None
                 else:
@@ -1458,6 +1467,7 @@ class Transformer(object):
 
     _parser = None
     _walker = None
+    _builder = None
     _serializer = None
 
     _a_as_tag = None
@@ -1545,8 +1555,10 @@ class Transformer(object):
         self.allowed_tags_blocks = allowed_tags_blocks
         self.allowed_tags_attributes = allowed_tags_attributes
 
-        self._parser = HTMLParser()
+    
+        self._builder = getTreeBuilder("etree")
         self._walker = getTreeWalker("etree")
+        self._parser = HTMLParser(self._builder)
         if serializer is None:
             serializer = MarkdownSerializer(
                 quote_attr_values="always",
@@ -1594,11 +1606,11 @@ class Transformer(object):
 
         text = wrapped % text
         dom = self._parser.parseFragment(text)
-
+        
         # reset the parser
         # TODO: is this needed? does `parseFragment` not reset first?
         self._parser.reset()
-
+        
         # Apply any filters after the
         dom_markdown = to_markdown(
             self._walker(dom),
@@ -1624,7 +1636,7 @@ class Transformer(object):
             dom_markdown = filter_class(source=dom_markdown)
 
         rendered = self._serializer.render(dom_markdown)
-
+        
         return rendered
 
     def adapt(self, dom):

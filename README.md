@@ -41,6 +41,14 @@ as_html = to_html(as_markdown) == to_html(to_markdown(as_html))
 * Customized feature: Python2 and Python3 compatibility. This shouldn't be a feature, but it is. Some excellent packages in this space stopped supporting Python2 already. This package aims to keep Python2 support around a bit longer than the official cutoff date, because legacy systems exist.
 
 
+## Unsupported Features
+
+Angled links are not currently supported, for example:
+
+	<http://example.com>
+
+They are not compatible with the html5lib parser, and trying to support them will require a lot of work.
+
 ## Pretty Markdown?
 
 What is pretty Markdown?

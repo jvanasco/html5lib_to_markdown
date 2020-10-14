@@ -3,8 +3,6 @@ import re
 from setuptools import setup
 from setuptools import find_packages
 
-import six
-
 here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, "README.md")) as fp:
     README = fp.read()
@@ -18,12 +16,13 @@ with open(
 
 
 install_requires = [
-    "html5lib",
-    "bleach",
-    # 'frozendict',
+    "html5lib>=1.1",
     'six',
 ]
 tests_require = []
+testing_extras = install_requires + tests_require + [
+    "pytest",
+]
 
 setup(
     name="html5lib_to_markdown",
@@ -40,6 +39,9 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     tests_require=tests_require,
+    extras_require={
+        "testing": testing_extras,
+    },
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",

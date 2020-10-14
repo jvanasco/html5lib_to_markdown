@@ -1,0 +1,15 @@
+<https://example.com>
+<https://example.com/path>
+<https://example.com/path/to>
+<https://example.com/path/to?args=foo>
+<https://example.com/path/to?args=foo#hash>
+<https://example.com/path/to?args=foo&bar=biz>
+<https://example.com/path/to?args=foo&bar=biz#hash>
+
+<!-- these will optimize away -->
+</path/to>
+</path/to.html>
+</path/to.html?args=foo&bar=biz>
+
+<!-- other protocols -->
+<mailto:friend@example.com>
