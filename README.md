@@ -1,3 +1,5 @@
+![Python package](https://github.com/jvanasco/html5lib_to_markdown/workflows/Python%20package/badge.svg)
+
 # html5lib_to_markdown
 
 This package offers a way to convert HTML to the Markdown format.
