@@ -6,7 +6,6 @@ from setuptools import find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, "README.md")) as fp:
     README = fp.read()
-README = README.split("\n\n", 1)[0] + "\n"
 
 # store version in the init.py
 with open(
@@ -32,6 +31,7 @@ setup(
     py_modules=["html5lib_to_markdown"],
     description="extract markdown flavored text from html",
     long_description=README,
+    long_description_content_type="text/markdown",
     zip_safe=False,
     keywords="",
     test_suite="tests_unit.test_transformations",
