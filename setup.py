@@ -3,25 +3,29 @@ import re
 from setuptools import setup
 from setuptools import find_packages
 
-here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, "README.md")) as fp:
-    README = fp.read()
+HERE = os.path.abspath(os.path.dirname(__file__))
+
+long_description = description = "extract markdown flavored text from html"
+with open(os.path.join(HERE, "README.md")) as fp:
+    long_description = fp.read()
 
 # store version in the init.py
-with open(
-    os.path.join(os.path.dirname(__file__), "html5lib_to_markdown", "__init__.py")
-) as v_file:
+with open(os.path.join(HERE, "html5lib_to_markdown", "__init__.py")) as v_file:
     VERSION = re.compile(r'.*__VERSION__ = "(.*?)"', re.S).match(v_file.read()).group(1)
 
 
 install_requires = [
     "html5lib>=1.1",
-    'six',
+    "six",
 ]
 tests_require = []
-testing_extras = install_requires + tests_require + [
-    "pytest",
-]
+testing_extras = (
+    install_requires
+    + tests_require
+    + [
+        "pytest",
+    ]
+)
 
 setup(
     name="html5lib_to_markdown",
@@ -29,8 +33,8 @@ setup(
     author_email="jonathan@findmeon.com",
     version=VERSION,
     py_modules=["html5lib_to_markdown"],
-    description="extract markdown flavored text from html",
-    long_description=README,
+    description=description,
+    long_description=long_description,
     long_description_content_type="text/markdown",
     zip_safe=False,
     keywords="",
