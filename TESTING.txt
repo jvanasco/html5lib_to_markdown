@@ -1,11 +1,12 @@
 Tests are organized as follows:
 
-	tests_unit/
+	tests/
+		active tests
+	tests/tests_unit/
 		unit tests, can be invoked from `setup.py`
 
-	tests_integrated
-		integrated tests, requires spinning up a server
-
+	tests_working/
+		tests under development
 
 Recommended debug settings
 

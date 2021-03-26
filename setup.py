@@ -38,7 +38,7 @@ setup(
     long_description_content_type="text/markdown",
     zip_safe=False,
     keywords="",
-    test_suite="tests.tests_unit.test_transformations",
+    test_suite="tests.tests_unit",
     packages=find_packages(
         where="src",
     ),
