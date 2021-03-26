@@ -10,7 +10,7 @@ with open(os.path.join(HERE, "README.md")) as fp:
     long_description = fp.read()
 
 # store version in the init.py
-with open(os.path.join(HERE, "html5lib_to_markdown", "__init__.py")) as v_file:
+with open(os.path.join(HERE, "src", "html5lib_to_markdown", "__init__.py")) as v_file:
     VERSION = re.compile(r'.*__VERSION__ = "(.*?)"', re.S).match(v_file.read()).group(1)
 
 
@@ -38,8 +38,11 @@ setup(
     long_description_content_type="text/markdown",
     zip_safe=False,
     keywords="",
-    test_suite="tests_unit.test_transformations",
-    packages=find_packages(),
+    test_suite="tests.tests_unit.test_transformations",
+    packages=find_packages(
+        where="src",
+    ),
+    package_dir={"": "src"},
     include_package_data=True,
     install_requires=install_requires,
     tests_require=tests_require,
