@@ -1,0 +1,2 @@
+<img src="/path/to/src">
+Suffix
