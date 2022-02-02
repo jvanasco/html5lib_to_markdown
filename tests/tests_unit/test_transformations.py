@@ -89,7 +89,9 @@ class _TestTransformations(object):
         transformer = Transformer(**kwargs)
         return transformer
 
-    def _test_html_to_markdown(self, filename_base, extra_tests=None, fail_expected=None):
+    def _test_html_to_markdown(
+        self, filename_base, extra_tests=None, fail_expected=None
+    ):
         (_html, _md_expected) = _get_test_data(filename_base)
         transformer = self._makeOne()
         _result = transformer.transform(_html)
@@ -107,7 +109,9 @@ class _TestTransformations(object):
             self.assertEqual(_md_expected, _result)
         if extra_tests:
             if "strip_scripts=False" in extra_tests:
-                _md_expected_2 = _get_test_data_alt(filename_base, "strip_scripts=False")
+                _md_expected_2 = _get_test_data_alt(
+                    filename_base, "strip_scripts=False"
+                )
                 _transformer = self._makeOne(strip_scripts=False)
                 _result = _transformer.transform(_html)
                 if PRINT_RESULTS:
@@ -137,7 +141,9 @@ class _TestTransformations(object):
                 else:
                     self.assertEqual(_md_expected_2, _result)
             if "a_simple_links=True" in extra_tests:
-                _md_expected_2 = _get_test_data_alt(filename_base, "a_simple_links=True")
+                _md_expected_2 = _get_test_data_alt(
+                    filename_base, "a_simple_links=True"
+                )
                 _transformer = self._makeOne(a_simple_links=True)
                 _result = _transformer.transform(_html)
                 if PRINT_RESULTS:
@@ -150,8 +156,24 @@ class _TestTransformations(object):
                     self.assertNotEqual(_md_expected_2, _result)
                 else:
                     self.assertEqual(_md_expected_2, _result)
+            if "img_as_tag=True" in extra_tests:
+                _md_expected_2 = _get_test_data_alt(filename_base, "img_as_tag=True")
+                _transformer = self._makeOne(img_as_tag=True)
+                _result = _transformer.transform(_html)
+                if PRINT_RESULTS:
+                    print("=" * 80)
+                    print(filename_base, "img_as_tag=True")
+                    print("- " * 20)
+                    print(_result)
+                    print("=" * 80)
+                if fail_expected:
+                    self.assertNotEqual(_md_expected_2, _result)
+                else:
+                    self.assertEqual(_md_expected_2, _result)
 
-    def _test_markdown_to_markdown(self, filename_base, extra_tests=None, fail_expected=None):
+    def _test_markdown_to_markdown(
+        self, filename_base, extra_tests=None, fail_expected=None
+    ):
         (_html, _md_expected) = _get_test_data(filename_base)
         transformer = self._makeOne()
         _result = transformer.transform(_md_expected)
@@ -228,6 +250,32 @@ class _TestTransformations(object):
 
     def test_0024(self):
         self._test_actual("0024-angled_link", fail_expected=True)
+
+    # --
+
+    # these tests are designed to debug/surface an issue regarding img tags
+    # not properly transforming
+
+    def test_0025_a_0(self):
+        self._test_actual("0025-a-0-img_prefix_suffix", ["img_as_tag=True"])
+
+    def test_0025_a_1(self):
+        self._test_actual("0025-a-1-img_prefix_suffix_oneline", ["img_as_tag=True"])
+
+    def test_0025_b_0(self):
+        self._test_actual("0025-b-0-img_prefix", ["img_as_tag=True"])
+
+    def test_0025_b_1(self):
+        self._test_actual("0025-b-1-img_prefix_oneline", ["img_as_tag=True"])
+
+    def test_0025_c_0(self):
+        self._test_actual("0025-c-0-img_suffix", ["img_as_tag=True"])
+
+    def test_0025_c_1(self):
+        self._test_actual("0025-c-1-img_suffix_oneline", ["img_as_tag=True"])
+
+    def test_0025_d(self):
+        self._test_actual("0025-d-img_bare", ["img_as_tag=True"])
 
     # ---
 

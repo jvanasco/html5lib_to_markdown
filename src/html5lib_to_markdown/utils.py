@@ -60,7 +60,8 @@ def clean_token_attributes(token, name=None, allowed_attributes=None):
     if "data" in token:
         if name in allowed_attributes:
             for _key in list(token["data"].keys()):
-                # _key = (namespace, name)
+                # _key = `(namespace, name)`
+                # usually this is `(None, name)`
                 if _key[1] not in allowed_attributes[name]:
                     del token["data"][_key]
         else:

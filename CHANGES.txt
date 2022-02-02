@@ -1,3 +1,7 @@
+0.0.6
+	fixed an error where img_as_tag was not processed correctly
+	changed some default values
+
 0.0.5
 	packaging layout
 

@@ -410,7 +410,7 @@ def to_markdown(
     `a_as_tag` is True.
 
     :arg bool reference_style_img: Should markdown images be rendered as
-    reference style ors shown inline?  default ``False``.  does nothing if
+    reference style or shown inline?  default ``False``.  does nothing if
     `img_as_tag` is True.
 
     :arg bool div_as_block: Should a `div` element be treated as a block like
@@ -575,6 +575,8 @@ def to_markdown(
         # s/2: this is our casting
         ttype = tokenTypes.get(ttype, None)
         name = token.get("name")
+        
+        print(ttype, name, token)
         
         # are we stripping script tags?
         if strip_scripts:
@@ -1403,7 +1405,14 @@ def to_markdown(
             # elif _lt.get('_md_type') in _tts_md_whitespace:
             #    token_stack.pop()
             else:
+                # what do we have?
+                # if we have a markdown node...
+                # _lt = {'type': 'Characters', 'data': '![Image](/path/to/src)', '_md_type': 15}
+                # but if we have a raw img node...
+                
                 if _lt.get("data"):
+                    # import pdb
+                    # pdb.set_trace()
                     _lt["data"] = _lt.get("data").rstrip("\n")
                 break
         else:
@@ -1565,11 +1574,7 @@ class Transformer(object):
                 omit_optional_tags=False,
                 escape_lt_in_attrs=True,
                 # JV wants it to look like this
-                use_trailing_solidus=True,
-                space_before_trailing_solidus=True,
-                quote_char="'",
                 alphabetical_attributes=True,
-                sanitize=False,
                 # We want to leave entities as they are without escaping or
                 # resolving or expanding
                 resolve_entities=False,

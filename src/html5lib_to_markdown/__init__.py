@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-__VERSION__ = "0.0.5"
+__VERSION__ = "0.0.6"
 
 
 from .transformer import Transformer
