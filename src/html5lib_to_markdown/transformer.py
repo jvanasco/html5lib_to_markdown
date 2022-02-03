@@ -70,7 +70,7 @@ DEBUG_STACKS_SIMPLE = bool(int(os.getenv("MD_DEBUG_STACKS_SIMPLE", 0)))
 
 # python-markdownify (http://github.com/matthewwithanm/python-markdownify) uses
 # a technique where content is tossed into a div so BeautifulSoup will parse the
-# fragment correctly.  the same trick works for html5lib
+# fragment correctly. the same trick works for html5lib
 FRAGMENT_TYPE = "html5libmarkdown"
 FRAGMENT_ID = "__CUSTOM_WRAPPER__"
 wrapped = '<%s id="%s">%%s</%s>' % (FRAGMENT_TYPE, FRAGMENT_ID, FRAGMENT_TYPE)
@@ -403,12 +403,12 @@ def to_markdown(
 
     :arg bool a_simple_links: Markdown has a syntax to simplify simple links, in
     which the target and text are the same, using a single empty tag like such:
-    "<https://example.com/path/to>".  If ``True``, the simple link format will
+    "<https://example.com/path/to>". If ``True``, the simple link format will
     be utilized for self-linking links; otherwise they will be rendered based on
-    the selected ``a_as_tag`` rule.  default ``True``
+    the selected ``a_as_tag`` rule. default ``True``
 
     :arg bool parse_markdown_simplelink: Allow a Markdown simplelink in the
-    parsed HTML.  These parse a bit oddly, but hey.  default ``True``.
+    parsed HTML. These parse a bit oddly, but hey. default ``True``.
 
     :arg bool img_as_tag: Should images be rendered as a HTML
     tag or in markdown syntax? default ``True``
@@ -422,11 +422,11 @@ def to_markdown(
     `a_as_tag` is True.
 
     :arg bool reference_style_img: Should markdown images be rendered as
-    reference style or shown inline?  default ``False``.  does nothing if
+    reference style or shown inline?  default ``False``. does nothing if
     `img_as_tag` is True.
 
     :arg bool div_as_block: Should a `div` element be treated as a block like
-    p tags?  default ``True``.  If ``False``, div tags will be ignored and stripped.
+    p tags?  default ``True``. If ``False``, div tags will be ignored and stripped.
 
     :arg list allowed_tags:  list of allowed pass-through tags. default is
     ``None``, which will invoke  ``markdown_info.MARKDOWN_TAGS_PASSTHROUGH``.
@@ -436,7 +436,7 @@ def to_markdown(
     This must be a subset of ``allowed_tags```
 
     :arg dict allowed_tags_attributes:  keys are tags, values are a list of
-    attributes for that tag.  default is ``None``, which will invoke
+    attributes for that tag. default is ``None``, which will invoke
     ``markdown_info.MARKDOWN_TAGS_ATTRIBUTES``.
 
     :arg string character_italic: What character should be the default for italic text.
@@ -537,7 +537,7 @@ def to_markdown(
     def possibly_nested(func):
         """
         This is a decorator used to stash the blockquote depth and prefix into
-        each processed token.  This function does not apply the prefix to the
+        each processed token. This function does not apply the prefix to the
         token's "data", but updates the token's dict with the prefix information.
         """
 
@@ -1126,7 +1126,7 @@ def to_markdown(
     # !!!: STEP 1- parse to a markdown tree
     """
     iterate through the tokens with `custom_slider_a`, which shows us what
-    the previous/next tokens are.  an iterated window of tags is passed
+    the previous/next tokens are. an iterated window of tags is passed
     to the `_process_token_sequence` function.
 
     a multi-window view of tags is needed to correctly process <a> tags
@@ -1423,7 +1423,7 @@ def to_markdown(
                     # but if we have a raw img node...
                     #   _lt == OrderedDict([((None, 'src'), '/path/to/src')])
                     # in the case of an OrderedDict, we clean the tag via `clean_token_attributes`
-                    if isinstance(_data, str):
+                    if isinstance(_data, string_types):
                         _lt["data"] = _data.rstrip("\n")
                 break
         else:
@@ -1443,7 +1443,7 @@ def to_markdown(
                     # but if we have a raw img node...
                     #   _lt == OrderedDict([((None, 'src'), '/path/to/src')])
                     # in the case of an OrderedDict, we clean the tag via `clean_token_attributes`
-                    if isinstance(_data, str):
+                    if isinstance(_data, string_types):
                         _ft["data"] = _data.lstrip("\n")
                 break
         else:
@@ -1559,7 +1559,7 @@ class Transformer(object):
         :arg dict allowed_tags_attributes: see ``to_markdown``
 
         :arg object serializer:  an instance of a ``html5lib.serializer.HTMLSerializer``
-        object.  default is ``None``, which will create an instance of this
+        object. default is ``None``, which will create an instance of this
         package's ``MarkdownSerializer`` with some default values.
         ``MarkdownSerializer`` unescapes the blockquote characters in markdown
         text from "&gt;" to ">", producing valid Markdown but invalid HTML.
