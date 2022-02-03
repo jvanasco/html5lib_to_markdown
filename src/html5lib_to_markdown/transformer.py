@@ -18,9 +18,11 @@ from html5lib import getTreeWalker
 from html5lib import HTMLParser
 from html5lib.constants import tokenTypes
 from html5lib.serializer import HTMLSerializer
-import six
 
 # local
+from ._compat import PY2
+from ._compat import string_types
+from ._compat import text_type
 from .markdown_info import MARKDOWN_TAGS_ATTRIBUTES
 from .markdown_info import MARKDOWN_TAGS_CORE
 from .markdown_info import MARKDOWN_TAGS_PASSTHROUGH
@@ -512,7 +514,7 @@ def to_markdown(
             _path = _path_components
         else:
             # !!!: this bit is weird.
-            if six.PY2:
+            if PY2:
                 _path = [_path_components[1], _path_components[0]]
                 if len(_path_components) > 2:
                     _path.extend(_path_components[2:])
@@ -1608,7 +1610,7 @@ class Transformer(object):
         :raises TypeError: if ``text`` is not a text type
 
         """
-        if not isinstance(text, six.string_types):
+        if not isinstance(text, string_types):
             message = (
                 "argument cannot be of '{name}' type, must be of text type".format(
                     name=text.__class__.__name__
@@ -1620,8 +1622,8 @@ class Transformer(object):
             return ""
 
         # bleach.utils.force_unicode
-        if not isinstance(text, six.text_type):
-            text = six.text_type(text, "utf-8", "strict")
+        if not isinstance(text, text_type):
+            text = text_type(text, "utf-8", "strict")
 
         text = "\n".join(
             [i.rstrip() for i in text.split("\n")]
