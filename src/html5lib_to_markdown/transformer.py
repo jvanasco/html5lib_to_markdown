@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 if __debug__:
     import pprint
     import pdb
+from collections import OrderedDict
 import os
 import logging
 
@@ -576,7 +577,7 @@ def to_markdown(
         ttype = tokenTypes.get(ttype, None)
         name = token.get("name")
         
-        print(ttype, name, token)
+        # print(ttype, name, token)
         
         # are we stripping script tags?
         if strip_scripts:
@@ -1137,6 +1138,7 @@ def to_markdown(
     actual processing of the iteration was pushed into a separate function,
     so we can keep track of the last yielded tag.
     """
+
     for idx in range(0, len_walker):
         tokens_converted = _process_token_idx(idx)
         if not tokens_converted:  # faster than checking for `None`
@@ -1144,7 +1146,7 @@ def to_markdown(
         # if we return a tuple, the first element should be a `TokenStartBlockElement`
         if isinstance(tokens_converted, tuple):
             token_stack.extend(tokens_converted)
-        else:
+        else:  
             token_stack.append(tokens_converted)
 
     # !!!: STEP 2a- strip the temporary wrapper we added
@@ -1405,15 +1407,19 @@ def to_markdown(
             # elif _lt.get('_md_type') in _tts_md_whitespace:
             #    token_stack.pop()
             else:
-                # what do we have?
-                # if we have a markdown node...
-                # _lt = {'type': 'Characters', 'data': '![Image](/path/to/src)', '_md_type': 15}
-                # but if we have a raw img node...
-                
-                if _lt.get("data"):
-                    # import pdb
-                    # pdb.set_trace()
-                    _lt["data"] = _lt.get("data").rstrip("\n")
+                _data = _lt.get("data")
+                if _data:
+                    # what do we have?
+                    # if we have a markdown node...
+                    #   _lt == {'type': 'Characters', 'data': '![Image](/path/to/src)', '_md_type': 15}
+                    # but if we have a raw img node...
+                    #   _lt == OrderedDict([((None, 'src'), '/path/to/src')])
+                    if isinstance(_data, OrderedDict):
+                        for _datum in list(_data.keys()):
+                            _data[_datum] = _data[_datum].rstrip("\n")
+                        _lt["data"] = _data
+                    else:
+                        _lt["data"] = _data.rstrip("\n")
                 break
         else:
             break
@@ -1424,8 +1430,19 @@ def to_markdown(
             if _ft.get("type") == "SpaceCharacters":
                 token_stack.pop(0)
             else:
-                if _ft.get("data"):
-                    _ft["data"] = _ft.get("data").lstrip("\n")
+                _data = _ft.get("data")
+                if _data:
+                    # what do we have?
+                    # if we have a markdown node...
+                    #   _lt == {'type': 'Characters', 'data': '![Image](/path/to/src)', '_md_type': 15}
+                    # but if we have a raw img node...
+                    #   _lt == OrderedDict([((None, 'src'), '/path/to/src')])
+                    if isinstance(_data, OrderedDict):
+                        for _datum in list(_data.keys()):
+                            _data[_datum] = _data[_datum].lstrip("\n")
+                        _ft["data"] = _data
+                    else:
+                        _ft["data"] = _data.lstrip("\n")
                 break
         else:
             break
@@ -1615,7 +1632,7 @@ class Transformer(object):
         # reset the parser
         # TODO: is this needed? does `parseFragment` not reset first?
         self._parser.reset()
-        
+
         # Apply any filters after the
         dom_markdown = to_markdown(
             self._walker(dom),
