@@ -20,7 +20,7 @@ _em_
 
 [Example.com](https://example.com/target=blank)
 
-<a href='https://example.com/target=blank'>![Image](/img_in_a.png)</a>
+<a href="https://example.com/target=blank">![Image](/img_in_a.png)</a>
 
 <!-- test angled links moved to 0024-angled_link.html -->
 

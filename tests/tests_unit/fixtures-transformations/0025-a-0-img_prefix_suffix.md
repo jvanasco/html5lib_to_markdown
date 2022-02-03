@@ -1,0 +1,3 @@
+Prefix
+![Image](/path/to/src)
+Suffix

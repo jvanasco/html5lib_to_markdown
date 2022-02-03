@@ -1,17 +1,27 @@
+0.0.6
+  * fixed an error where allowed tags, such as `a` and `img`, were not
+    processed correctly. this is was due to the logic sections used to clean
+    the `data` payloads when (i) leading and (ii) trailing spaces were not
+    present, a (i) lstrip and (ii) rstrip were attempted. in the instance of
+    an allowed tag, the `data` payloads are not a parsed markdown element but
+    instead an `OrderedDict`.
+  * changed some default values
+  * added test cases to protect against the a/img bug
+
 0.0.5
-	packaging layout
+  packaging layout
 
 0.0.4
-	packaging fix
+  packaging fix
 
 0.0.3
-	* upgraded black
-	* integrated with pre-commit
-	* github actions
-	* dropped py35 testing
+  * upgraded black
+  * integrated with pre-commit
+  * github actions
+  * dropped py35 testing
 
 0.0.2
-	black formatting
+  black formatting
 
 0.0.1
-	initial
+  initial

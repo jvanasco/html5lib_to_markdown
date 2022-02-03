@@ -1,0 +1,2 @@
+Prefix
+![Image](/path/to/src)

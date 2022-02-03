@@ -1,10 +1,11 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
+# stdlib
 import os
-import pdb
 import unittest
 
+# local
 from html5lib_to_markdown.transformer import Transformer
 
 
@@ -19,7 +20,7 @@ ALLOW_MISSING = bool(int(os.getenv("MD_TEST_ALLOW_MISSING", 0)))
 PRINT_RESULTS = bool(int(os.getenv("MD_TEST_PRINT_RESULTS", 0)))
 
 
-# ==============================================================================
+# ------------------------------------------------------------------------------
 
 
 _dir_base = os.path.dirname(__file__)
@@ -35,7 +36,7 @@ def _get_test_data(filestring):
     try:
         with open(_fpath_md, "r") as fh:
             _md = fh.read()
-    except Exception as exc:
+    except Exception:
         if not ALLOW_MISSING:
             raise
     return (_html, _md)
@@ -47,7 +48,7 @@ def _get_test_data_alt(filestring, alt):
     try:
         with open(_fpath_md, "r") as fh:
             _md = fh.read()
-    except Exception as exc:
+    except Exception:
         if not ALLOW_MISSING:
             raise
     return _md
@@ -89,7 +90,9 @@ class _TestTransformations(object):
         transformer = Transformer(**kwargs)
         return transformer
 
-    def _test_html_to_markdown(self, filename_base, extra_tests=None, fail_expected=None):
+    def _test_html_to_markdown(
+        self, filename_base, extra_tests=None, fail_expected=None
+    ):
         (_html, _md_expected) = _get_test_data(filename_base)
         transformer = self._makeOne()
         _result = transformer.transform(_html)
@@ -107,51 +110,112 @@ class _TestTransformations(object):
             self.assertEqual(_md_expected, _result)
         if extra_tests:
             if "strip_scripts=False" in extra_tests:
-                _md_expected_2 = _get_test_data_alt(filename_base, "strip_scripts=False")
-                _transformer = self._makeOne(strip_scripts=False)
-                _result = _transformer.transform(_html)
-                if PRINT_RESULTS:
-                    print("=" * 80)
-                    print(filename_base, "strip_scripts=False")
-                    print("- " * 20)
-                    print(_result)
-                    print("=" * 80)
-                if fail_expected:
-                    self.assertNotEqual(_md_expected_2, _result)
-                else:
-                    self.assertEqual(_md_expected_2, _result)
-            if "parse_markdown_simplelink=False" in extra_tests:
-                _md_expected_2 = _get_test_data_alt(
-                    filename_base, "parse_markdown_simplelink=False"
-                )
-                _transformer = self._makeOne(parse_markdown_simplelink=False)
-                _result = _transformer.transform(_html)
-                if PRINT_RESULTS:
-                    print("=" * 80)
-                    print(filename_base, "parse_markdown_simplelink=False")
-                    print("- " * 20)
-                    print(_result)
-                    print("=" * 80)
-                if fail_expected:
-                    self.assertNotEqual(_md_expected_2, _result)
-                else:
-                    self.assertEqual(_md_expected_2, _result)
-            if "a_simple_links=True" in extra_tests:
-                _md_expected_2 = _get_test_data_alt(filename_base, "a_simple_links=True")
-                _transformer = self._makeOne(a_simple_links=True)
-                _result = _transformer.transform(_html)
-                if PRINT_RESULTS:
-                    print("=" * 80)
-                    print(filename_base, "a_simple_links=True")
-                    print("- " * 20)
-                    print(_result)
-                    print("=" * 80)
-                if fail_expected:
-                    self.assertNotEqual(_md_expected_2, _result)
-                else:
-                    self.assertEqual(_md_expected_2, _result)
 
-    def _test_markdown_to_markdown(self, filename_base, extra_tests=None, fail_expected=None):
+                def _strip_scripts():
+                    # run in a function for better traceback
+                    _md_expected_2 = _get_test_data_alt(
+                        filename_base, "strip_scripts=False"
+                    )
+                    _transformer = self._makeOne(strip_scripts=False)
+                    _result = _transformer.transform(_html)
+                    if PRINT_RESULTS:
+                        print("=" * 80)
+                        print(filename_base, "strip_scripts=False")
+                        print("- " * 20)
+                        print(_result)
+                        print("=" * 80)
+                    if fail_expected:
+                        self.assertNotEqual(_md_expected_2, _result)
+                    else:
+                        self.assertEqual(_md_expected_2, _result)
+
+                _strip_scripts()
+            if "parse_markdown_simplelink=False" in extra_tests:
+
+                def _parse_markdown_simplelink():
+                    # run in a function for better traceback
+                    _md_expected_2 = _get_test_data_alt(
+                        filename_base, "parse_markdown_simplelink=False"
+                    )
+                    _transformer = self._makeOne(parse_markdown_simplelink=False)
+                    _result = _transformer.transform(_html)
+                    if PRINT_RESULTS:
+                        print("=" * 80)
+                        print(filename_base, "parse_markdown_simplelink=False")
+                        print("- " * 20)
+                        print(_result)
+                        print("=" * 80)
+                    if fail_expected:
+                        self.assertNotEqual(_md_expected_2, _result)
+                    else:
+                        self.assertEqual(_md_expected_2, _result)
+
+                _parse_markdown_simplelink()
+            if "a_simple_links=True" in extra_tests:
+
+                def _a_simple_links():
+                    # run in a function for better traceback
+                    _md_expected_2 = _get_test_data_alt(
+                        filename_base, "a_simple_links=True"
+                    )
+                    _transformer = self._makeOne(a_simple_links=True)
+                    _result = _transformer.transform(_html)
+                    if PRINT_RESULTS:
+                        print("=" * 80)
+                        print(filename_base, "a_simple_links=True")
+                        print("- " * 20)
+                        print(_result)
+                        print("=" * 80)
+                    if fail_expected:
+                        self.assertNotEqual(_md_expected_2, _result)
+                    else:
+                        self.assertEqual(_md_expected_2, _result)
+
+                _a_simple_links()
+            if "a_as_tag=True" in extra_tests:
+
+                def _a_as_tag():
+                    # run in a function for better traceback
+                    _md_expected_2 = _get_test_data_alt(filename_base, "a_as_tag=True")
+                    _transformer = self._makeOne(a_as_tag=True)
+                    _result = _transformer.transform(_html)
+                    if PRINT_RESULTS:
+                        print("=" * 80)
+                        print(filename_base, "a_as_tag=True")
+                        print("- " * 20)
+                        print(_result)
+                        print("=" * 80)
+                    if fail_expected:
+                        self.assertNotEqual(_md_expected_2, _result)
+                    else:
+                        self.assertEqual(_md_expected_2, _result)
+
+                _a_as_tag()
+            if "img_as_tag=True" in extra_tests:
+
+                def _img_as_tag():
+                    # run in a function for better traceback
+                    _md_expected_2 = _get_test_data_alt(
+                        filename_base, "img_as_tag=True"
+                    )
+                    _transformer = self._makeOne(img_as_tag=True)
+                    _result = _transformer.transform(_html)
+                    if PRINT_RESULTS:
+                        print("=" * 80)
+                        print(filename_base, "img_as_tag=True")
+                        print("- " * 20)
+                        print(_result)
+                        print("=" * 80)
+                    if fail_expected:
+                        self.assertNotEqual(_md_expected_2, _result)
+                    else:
+                        self.assertEqual(_md_expected_2, _result)
+
+                _img_as_tag()
+
+    def _test_markdown_to_markdown(
+        self, filename_base, extra_tests=None, fail_expected=None
+    ):
         (_html, _md_expected) = _get_test_data(filename_base)
         transformer = self._makeOne()
         _result = transformer.transform(_md_expected)
@@ -228,6 +292,40 @@ class _TestTransformations(object):
 
     def test_0024(self):
         self._test_actual("0024-angled_link", fail_expected=True)
+
+    # --
+
+    # these tests are designed to debug/surface an issue regarding img tags
+    # not properly transforming
+    # the `25` section is for img tags
+    # additinoal testing in the  `26` section is for `a` tags, which may behave similarly
+
+    def test_0025_a_0(self):
+        self._test_actual("0025-a-0-img_prefix_suffix", ["img_as_tag=True"])
+
+    def test_0025_a_1(self):
+        self._test_actual("0025-a-1-img_prefix_suffix_oneline", ["img_as_tag=True"])
+
+    def test_0025_b_0(self):
+        self._test_actual("0025-b-0-img_prefix", ["img_as_tag=True"])
+
+    def test_0025_b_1(self):
+        self._test_actual("0025-b-1-img_prefix_oneline", ["img_as_tag=True"])
+
+    def test_0025_c_0(self):
+        self._test_actual("0025-c-0-img_suffix", ["img_as_tag=True"])
+
+    def test_0025_c_1(self):
+        self._test_actual("0025-c-1-img_suffix_oneline", ["img_as_tag=True"])
+
+    def test_0025_d(self):
+        self._test_actual("0025-d-img_bare", ["img_as_tag=True"])
+
+    def test_0026_d(self):
+        self._test_actual(
+            "0026-d-a_bare",
+            ["a_as_tag=True", "a_simple_links=True", "parse_markdown_simplelink=False"],
+        )
 
     # ---
 

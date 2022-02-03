@@ -1,0 +1,1 @@
+![Image](/path/to/src)
