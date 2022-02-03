@@ -15,8 +15,6 @@ This package is currently targeting a SUBSET of full HTML->Markdown conversion t
 
 * Customized Feature: Use HTML for certain elements instead of Markdown syntax.  Sometimes we WANT to use <a> and <img> tags, and not turn them into Markdown syntax.
 
-* Core Implementation Detail. This package is implemented as a `htmllib5` "tree adapter", which means it can be layered into many htm5lib processing routines.  Other packages use `BeautifulSoup`, `lxml` or `HTMLParser`.  These other projects are all great, but require re-processing if you are already doing things with `html5lib`.
-
 * Customized Feature: Clean up common html issues and make pretty Markdown.  This library doesn't just create Markdown, but optimized/pretty Markdown. This library attempts to optimize-away extra newlines and spaces, creating a concise and readable Markdown version.
 
 * Customized Feature: ignore unwanted html tags and attributes.  
@@ -41,6 +39,8 @@ as_html = to_html(as_markdown) == to_html(to_markdown(as_html))
 	2. Render `a` tags, not Markdown format
 
 * Customized feature: Python2 and Python3 compatibility. This shouldn't be a feature, but it is. Some excellent packages in this space stopped supporting Python2 already. This package aims to keep Python2 support around a bit longer than the official cutoff date, because legacy systems exist.
+
+* Core Implementation Detail. This package is implemented as a `htmllib5` "tree adapter", which means it can be potentially be layered into many htm5lib processing routines.  Other packages use `BeautifulSoup`, `lxml` or `HTMLParser`.  These other projects are all great, but require re-processing if you are already doing things with `html5lib`.
 
 
 ## Unsupported Features
