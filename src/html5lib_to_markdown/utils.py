@@ -17,7 +17,7 @@ RE_space_tab_p = re.compile(r"[\ \t]+")
 RE_whitespace_meh = re.compile(r"\n[\ \t]+(?![\d\*])")
 
 
-# ==============================================================================
+# ------------------------------------------------------------------------------
 
 
 # escaping attributes
@@ -59,11 +59,14 @@ def clean_token_attributes(token, name=None, allowed_attributes=None):
         name = token.get("name")
     if "data" in token:
         if name in allowed_attributes:
-            for _key in list(token["data"].keys()):
+            _data = token["data"]
+            for _key in list(_data.keys()):
                 # _key = `(namespace, name)`
                 # usually this is `(None, name)`
                 if _key[1] not in allowed_attributes[name]:
-                    del token["data"][_key]
+                    del _data[_key]
+                else:
+                    _data[_key] = _data[_key].strip()
         else:
             token["data"] = {}
     return token

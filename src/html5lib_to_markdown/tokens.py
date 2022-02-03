@@ -62,7 +62,7 @@ from .utils import safe_title
 DEBUG_TOKENS = bool(int(os.getenv("MD_DEBUG_TOKENS", 0)))
 
 
-# ==============================================================================
+# ------------------------------------------------------------------------------
 
 
 # use INTs for faster comparison of our '_md_type'
@@ -189,8 +189,7 @@ def TokenCharactersSplit(data=""):
 
 
 def TokenDebug(_debug=None):
-    """used to place debug info; this will not render
-    """
+    """used to place debug info; this will not render"""
     return {
         "type": "SpaceCharacters",
         "data": "",

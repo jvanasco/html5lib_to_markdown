@@ -1,10 +1,11 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
+# stdlib
 import os
-import pdb
 import unittest
 
+# local
 from html5lib_to_markdown.transformer import Transformer
 
 
@@ -19,7 +20,7 @@ ALLOW_MISSING = bool(int(os.getenv("MD_TEST_ALLOW_MISSING", 0)))
 PRINT_RESULTS = bool(int(os.getenv("MD_TEST_PRINT_RESULTS", 0)))
 
 
-# ==============================================================================
+# ------------------------------------------------------------------------------
 
 
 _dir_base = os.path.dirname(__file__)
@@ -35,7 +36,7 @@ def _get_test_data(filestring):
     try:
         with open(_fpath_md, "r") as fh:
             _md = fh.read()
-    except Exception as exc:
+    except Exception:
         if not ALLOW_MISSING:
             raise
     return (_html, _md)
@@ -47,7 +48,7 @@ def _get_test_data_alt(filestring, alt):
     try:
         with open(_fpath_md, "r") as fh:
             _md = fh.read()
-    except Exception as exc:
+    except Exception:
         if not ALLOW_MISSING:
             raise
     return _md
@@ -109,6 +110,7 @@ class _TestTransformations(object):
             self.assertEqual(_md_expected, _result)
         if extra_tests:
             if "strip_scripts=False" in extra_tests:
+
                 def _strip_scripts():
                     # run in a function for better traceback
                     _md_expected_2 = _get_test_data_alt(
@@ -126,8 +128,10 @@ class _TestTransformations(object):
                         self.assertNotEqual(_md_expected_2, _result)
                     else:
                         self.assertEqual(_md_expected_2, _result)
+
                 _strip_scripts()
             if "parse_markdown_simplelink=False" in extra_tests:
+
                 def _parse_markdown_simplelink():
                     # run in a function for better traceback
                     _md_expected_2 = _get_test_data_alt(
@@ -145,8 +149,10 @@ class _TestTransformations(object):
                         self.assertNotEqual(_md_expected_2, _result)
                     else:
                         self.assertEqual(_md_expected_2, _result)
+
                 _parse_markdown_simplelink()
             if "a_simple_links=True" in extra_tests:
+
                 def _a_simple_links():
                     # run in a function for better traceback
                     _md_expected_2 = _get_test_data_alt(
@@ -164,8 +170,10 @@ class _TestTransformations(object):
                         self.assertNotEqual(_md_expected_2, _result)
                     else:
                         self.assertEqual(_md_expected_2, _result)
+
                 _a_simple_links()
             if "a_as_tag=True" in extra_tests:
+
                 def _a_as_tag():
                     # run in a function for better traceback
                     _md_expected_2 = _get_test_data_alt(filename_base, "a_as_tag=True")
@@ -181,11 +189,15 @@ class _TestTransformations(object):
                         self.assertNotEqual(_md_expected_2, _result)
                     else:
                         self.assertEqual(_md_expected_2, _result)
+
                 _a_as_tag()
             if "img_as_tag=True" in extra_tests:
+
                 def _img_as_tag():
                     # run in a function for better traceback
-                    _md_expected_2 = _get_test_data_alt(filename_base, "img_as_tag=True")
+                    _md_expected_2 = _get_test_data_alt(
+                        filename_base, "img_as_tag=True"
+                    )
                     _transformer = self._makeOne(img_as_tag=True)
                     _result = _transformer.transform(_html)
                     if PRINT_RESULTS:
@@ -198,7 +210,9 @@ class _TestTransformations(object):
                         self.assertNotEqual(_md_expected_2, _result)
                     else:
                         self.assertEqual(_md_expected_2, _result)
+
                 _img_as_tag()
+
     def _test_markdown_to_markdown(
         self, filename_base, extra_tests=None, fail_expected=None
     ):
@@ -308,7 +322,10 @@ class _TestTransformations(object):
         self._test_actual("0025-d-img_bare", ["img_as_tag=True"])
 
     def test_0026_d(self):
-        self._test_actual("0026-d-a_bare", ["a_as_tag=True", "a_simple_links=True", "parse_markdown_simplelink=False"])
+        self._test_actual(
+            "0026-d-a_bare",
+            ["a_as_tag=True", "a_simple_links=True", "parse_markdown_simplelink=False"],
+        )
 
     # ---
 

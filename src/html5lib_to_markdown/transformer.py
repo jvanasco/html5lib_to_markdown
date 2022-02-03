@@ -9,51 +9,62 @@ from __future__ import unicode_literals
 """
 
 # stdlib
-if __debug__:
-    import pprint
-    import pdb
-from collections import OrderedDict
-import os
 import logging
-
-log = logging.getLogger(__name__)
+import os
 
 # pypi
-import six
-import html5lib
-from html5lib import constants
-from html5lib import HTMLParser
 from html5lib import getTreeBuilder
 from html5lib import getTreeWalker
-from html5lib.serializer import HTMLSerializer
-from html5lib.filters.base import Filter
+from html5lib import HTMLParser
 from html5lib.constants import tokenTypes
+from html5lib.serializer import HTMLSerializer
+import six
 
 # local
+from .markdown_info import MARKDOWN_TAGS_ATTRIBUTES
 from .markdown_info import MARKDOWN_TAGS_CORE
 from .markdown_info import MARKDOWN_TAGS_PASSTHROUGH
 from .markdown_info import MARKDOWN_TAGS_PASSTHROUGH_BLOCKS
-from .markdown_info import MARKDOWN_TAGS_ATTRIBUTES
-from .tokens import *
-from .utils import safe_title
+from .tokens import mdTokenTypes
+from .tokens import TokenAEndTag
+from .tokens import TokenAMarkdown
+from .tokens import TokenAMarkdownReference
+from .tokens import TokenAMarkdownSimple
+from .tokens import TokenAStartTag
+from .tokens import TokenCharactersSplit
+from .tokens import TokenEmphasis
+from .tokens import TokenEndBlockElement
+from .tokens import TokenEndBlockquote
+from .tokens import TokenEndCode
+from .tokens import TokenHNStart
+from .tokens import TokenHR
+from .tokens import TokenImgMarkdown
+from .tokens import TokenLiStart
+from .tokens import TokenNewline
+from .tokens import TokenNewlineBR
+from .tokens import TokenNewlines
+from .tokens import TokenSpace
+from .tokens import TokenStartBlockElement
+from .tokens import TokenStartBlockquote
+from .tokens import TokenStartCode
+from .tokens import TokenStrong
 from .utils import clean_token_attributes
-from .utils import RE_newlines_2p__full
+from .utils import is_list_upcoming
 from .utils import RE_newlines_3p
 from .utils import RE_space_tab_only
 from .utils import RE_space_tab_p
 from .utils import RE_whitespace_meh
-from .utils import is_list_upcoming
+from .utils import safe_title
 
 
 # ==============================================================================
 
+log = logging.getLogger(__name__)
 
 DEBUG_STACKS = bool(int(os.getenv("MD_DEBUG_STACKS", 0)))
 DEBUG_STACKS_SIMPLE = bool(int(os.getenv("MD_DEBUG_STACKS_SIMPLE", 0)))
 
-
-# ==============================================================================
-
+# ------------------------------------------------------------------------------
 
 # python-markdownify (http://github.com/matthewwithanm/python-markdownify) uses
 # a technique where content is tossed into a div so BeautifulSoup will parse the
@@ -61,7 +72,6 @@ DEBUG_STACKS_SIMPLE = bool(int(os.getenv("MD_DEBUG_STACKS_SIMPLE", 0)))
 FRAGMENT_TYPE = "html5libmarkdown"
 FRAGMENT_ID = "__CUSTOM_WRAPPER__"
 wrapped = '<%s id="%s">%%s</%s>' % (FRAGMENT_TYPE, FRAGMENT_ID, FRAGMENT_TYPE)
-
 
 # There will be a lot of comparisons to the TagType, so cast it to an `int`
 # 1/2: this is our mapping. it is the `html5lib.constants.tokenTypes`
@@ -139,7 +149,6 @@ tag_names_sensitive__block = ("pre", "script")  # as a block
 tag_names_sensitive__inline = ("code",)  # inline
 tag_names_sensitive = tag_names_sensitive__block + tag_names_sensitive__inline
 
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -163,12 +172,12 @@ def token_apply_prefix(token, blockquote=None, codeblock=None):
         token["data"] = token["data"].replace("\n", "\n%s" % _prefix)
         if token["type"] == "SpaceCharacters":
             token["type"] = "Characters"
-    except AttributeError as exc:
+    except AttributeError:
         # this triggers if the data is a dict
         # which happens on native tags
         # just ignore it!
         return
-    except KeyError as exc:
+    except KeyError:
         # this triggers if there is no data
         # which happens on native tags
         # just ignore it!
@@ -279,7 +288,7 @@ def cleanup_space_backwards(
                                 )
                             stack.append(_tok)
                         break
-                _discarded = stack.pop()
+                _discarded = stack.pop()  # noqa: F841
             else:
                 break
         else:
@@ -395,8 +404,8 @@ def to_markdown(
     "<https://example.com/path/to>".  If ``True``, the simple link format will
     be utilized for self-linking links; otherwise they will be rendered based on
     the selected ``a_as_tag`` rule.  default ``True``
-    
-    :arg bool parse_markdown_simplelink: Allow a Markdown simplelink in the 
+
+    :arg bool parse_markdown_simplelink: Allow a Markdown simplelink in the
     parsed HTML.  These parse a bit oddly, but hey.  default ``True``.
 
     :arg bool img_as_tag: Should images be rendered as a HTML
@@ -523,7 +532,6 @@ def to_markdown(
             return (TokenAStartTag, _url_reconstructed, TokenAEndTag)
         return TokenAMarkdown(_url_reconstructed, _url_reconstructed)
 
-
     def possibly_nested(func):
         """
         This is a decorator used to stash the blockquote depth and prefix into
@@ -532,7 +540,7 @@ def to_markdown(
         """
 
         def wrapper(*args):
-            results_og = results = func(*args)
+            results = func(*args)
             if results is None:
                 return None
             # it is possible to receive a tuple of nodes from the function
@@ -576,9 +584,9 @@ def to_markdown(
         # s/2: this is our casting
         ttype = tokenTypes.get(ttype, None)
         name = token.get("name")
-        
+
         # print(ttype, name, token)
-        
+
         # are we stripping script tags?
         if strip_scripts:
             if _in["_strip_script"]:
@@ -1076,7 +1084,7 @@ def to_markdown(
             # check the last significant token
             # last_sig = stack__last_token(token_stack)  # calculated above
             _last_sig_md = _last_sig.get("_md_type")
-            _last_sig_type = _last_sig.get("type")
+            # _last_sig_type = _last_sig.get("type")
 
             if (
                 _last_sig_md in _tts_md_startblocks
@@ -1089,7 +1097,7 @@ def to_markdown(
 
             elif _last_sig_md in _tts_md_newlines_single:
                 if token.get("_md_type") in _tts_md_newlines_all:
-                    _dicarded = token_stack.pop()
+                    _dicarded = token_stack.pop()  # noqa: F841
                     token = TokenNewlines()
                     if __debug__:
                         token["_md_whitespace_standardized"] = 6
@@ -1146,7 +1154,7 @@ def to_markdown(
         # if we return a tuple, the first element should be a `TokenStartBlockElement`
         if isinstance(tokens_converted, tuple):
             token_stack.extend(tokens_converted)
-        else:  
+        else:
             token_stack.append(tokens_converted)
 
     # !!!: STEP 2a- strip the temporary wrapper we added
@@ -1186,8 +1194,6 @@ def to_markdown(
     # - goal 1: correct whitespace
     # - goal 2: toggle blockquote
     token_stack__post = []
-    if __debug__:
-        _dbg = False
     _last_codeblock = None
     _codeblocked = None
     for (token_idx, token) in enumerate(token_stack):
@@ -1197,7 +1203,7 @@ def to_markdown(
         _t_prev_md = token_prev.get("_md_type") if token_prev else None
         try:
             token_next = token_stack[token_idx + 1]
-        except:
+        except IndexError:
             token_next = None
         _t_next_md = token_next.get("_md_type") if token_next else None
 
@@ -1261,7 +1267,7 @@ def to_markdown(
                     # optimize some whitespace here...
                     if _t_md in _tts_md_newlines_all:
                         if _last_sig_md in _tts_md_newlines_all:
-                            _discarded = token_stack__post.pop()
+                            _discarded = token_stack__post.pop()  # noqa: F841
                             _tok = _contextual_TokenNewlines(
                                 newlines=2, blockquoted=None, codeblocked=None
                             )
@@ -1319,14 +1325,14 @@ def to_markdown(
                     if token_stack__post and token_stack__post[-1].get(
                         "_md_code_compress"
                     ):
-                        _discarded_pre = token_stack__post.pop()
+                        _discarded_pre = token_stack__post.pop()  # noqa: F841
                     lt = token_stack__post[-1]
                     if lt.get("_md_type") in _tts_md_newlines_single:
                         token_apply_prefix(
                             lt, blockquote=_t_md_blockquote, codeblock=_codeblocked
                         )
                     elif lt.get("_md_type") == tt_md_TokenNewlines:
-                        _discarded_lines = token_stack__post.pop()
+                        _discarded_lines = token_stack__post.pop()  # noqa: F841
                         tok = _contextual_TokenNewlines(
                             newlines=1, blockquoted=_t_md_blockquote, codeblocked=False
                         )
@@ -1414,11 +1420,8 @@ def to_markdown(
                     #   _lt == {'type': 'Characters', 'data': '![Image](/path/to/src)', '_md_type': 15}
                     # but if we have a raw img node...
                     #   _lt == OrderedDict([((None, 'src'), '/path/to/src')])
-                    if isinstance(_data, OrderedDict):
-                        for _datum in list(_data.keys()):
-                            _data[_datum] = _data[_datum].rstrip("\n")
-                        _lt["data"] = _data
-                    else:
+                    # in the case of an OrderedDict, we clean the tag via `clean_token_attributes`
+                    if isinstance(_data, str):
                         _lt["data"] = _data.rstrip("\n")
                 break
         else:
@@ -1437,11 +1440,8 @@ def to_markdown(
                     #   _lt == {'type': 'Characters', 'data': '![Image](/path/to/src)', '_md_type': 15}
                     # but if we have a raw img node...
                     #   _lt == OrderedDict([((None, 'src'), '/path/to/src')])
-                    if isinstance(_data, OrderedDict):
-                        for _datum in list(_data.keys()):
-                            _data[_datum] = _data[_datum].lstrip("\n")
-                        _ft["data"] = _data
-                    else:
+                    # in the case of an OrderedDict, we clean the tag via `clean_token_attributes`
+                    if isinstance(_data, str):
                         _ft["data"] = _data.lstrip("\n")
                 break
         else:
@@ -1581,7 +1581,6 @@ class Transformer(object):
         self.allowed_tags_blocks = allowed_tags_blocks
         self.allowed_tags_attributes = allowed_tags_attributes
 
-    
         self._builder = getTreeBuilder("etree")
         self._walker = getTreeWalker("etree")
         self._parser = HTMLParser(self._builder)
@@ -1610,8 +1609,10 @@ class Transformer(object):
 
         """
         if not isinstance(text, six.string_types):
-            message = "argument cannot be of '{name}' type, must be of text type".format(
-                name=text.__class__.__name__
+            message = (
+                "argument cannot be of '{name}' type, must be of text type".format(
+                    name=text.__class__.__name__
+                )
             )
             raise TypeError(message)
 
@@ -1628,7 +1629,7 @@ class Transformer(object):
 
         text = wrapped % text
         dom = self._parser.parseFragment(text)
-        
+
         # reset the parser
         # TODO: is this needed? does `parseFragment` not reset first?
         self._parser.reset()
@@ -1658,7 +1659,7 @@ class Transformer(object):
             dom_markdown = filter_class(source=dom_markdown)
 
         rendered = self._serializer.render(dom_markdown)
-        
+
         return rendered
 
     def adapt(self, dom):
@@ -1673,8 +1674,10 @@ class Transformer(object):
 
         """
         if not isinstance(dom, list):
-            message = "argument cannot be of '{name}' type, must be of list type".format(
-                name=dom.__class__.__name__
+            message = (
+                "argument cannot be of '{name}' type, must be of list type".format(
+                    name=dom.__class__.__name__
+                )
             )
             raise TypeError(message)
 
