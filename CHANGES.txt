@@ -1,4 +1,5 @@
-Unreleased
+1.0.0
+  * escape Markdown syntax in ordinary HTML text by default. Set escape_text=False to preserve it
   * preserve backticks and decoded text in inline code, and keep literal greater-than signs distinct from blockquote markers
   * honor character_italicbold for matching bold and italic spans when configured
   * normalize horizontal rule spacing without scanning the full token list again

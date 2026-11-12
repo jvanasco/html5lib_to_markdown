@@ -45,6 +45,6 @@ new line here
 
 <table>
 <thead>
-<tr><td>td!</td></tr>
+<tr><td>td&#33;</td></tr>
 </thead>
 </table>

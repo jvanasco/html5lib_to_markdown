@@ -11,9 +11,31 @@ RE_newlines_3p = re.compile(r"\n\n\n+")
 RE_space_tab_only = re.compile(r"^[\ \t]+$")
 RE_space_tab_p = re.compile(r"[\ \t]+")
 RE_whitespace_meh = re.compile(r"\n[\ \t]+(?![\d\*])")
+_MARKDOWN_PUNCTUATION = "\\!#*[]_`|~"
+_MARKDOWN_TEXT_ESCAPES = str.maketrans(
+    {character: "\\" + character for character in _MARKDOWN_PUNCTUATION}
+)
+_MARKDOWN_HTML_ESCAPES = str.maketrans(
+    {character: f"&#{ord(character)};" for character in _MARKDOWN_PUNCTUATION}
+    | {"&": "&amp;", "<": "&lt;", ">": "&gt;"}
+)
+_MARKDOWN_BLOCK_MARKER = re.compile(
+    r"^([ \t]*(?:[0-9]{1,9})?)([.)]|(?<![0-9])[+=-])", re.MULTILINE
+)
 
 
 # ------------------------------------------------------------------------------
+
+
+def escape_markdown_text(text: str, *, in_html: bool = False) -> str:
+    """Escape Markdown punctuation in text extracted from ordinary HTML nodes."""
+    if in_html:
+        text = text.translate(_MARKDOWN_HTML_ESCAPES)
+        return _MARKDOWN_BLOCK_MARKER.sub(
+            lambda match: f"{match[1]}&#{ord(match[2])};", text
+        )
+    text = text.translate(_MARKDOWN_TEXT_ESCAPES)
+    return _MARKDOWN_BLOCK_MARKER.sub(r"\1\\\2", text)
 
 
 # escaping attributes

@@ -202,3 +202,60 @@ def test_combined_emphasis_option(html: str, character: str, expected: str) -> N
 def test_default_keeps_separate_emphasis_markers() -> None:
     assert transform("<strong><em>x</em></strong>") == "**_x_**"
     assert transform("<em><strong>x</strong></em>") == "_**x**_"
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("# heading", r"\# heading"),
+        ("- item", r"\- item"),
+        ("+ item", r"\+ item"),
+        ("1. item", r"1\. item"),
+        ("2) item", r"2\) item"),
+        ("---", r"\---"),
+        ("===", r"\==="),
+        ("~~~", r"\~\~\~"),
+        ("*em* _em_", r"\*em\* \_em\_"),
+        ("[link](/x) ![image](/y)", r"\[link\](/x) \!\[image\](/y)"),
+        ("`code` \\text", r"\`code\` \\text"),
+        ("a | b", r"a \| b"),
+    ],
+)
+def test_ordinary_html_text_is_literal_by_default(text: str, expected: str) -> None:
+    html = f"<p>{text}</p>"
+    assert transform(html) == expected
+    assert Transformer().transform(html) == expected
+    assert transform(html, escape_text=False) == text
+
+
+def test_literal_text_remains_distinct_from_generated_syntax() -> None:
+    html = (
+        "<h2>Title #</h2><ul><li>- literal</li></ul>"
+        "<blockquote><p>1. item</p></blockquote>"
+        "<p><strong>bold</strong> <em>italic</em> "
+        "!<a href='/a'>link</a> <img alt='*fallback*'> <code>*code*</code></p>"
+    )
+    assert transform(html) == (
+        "## Title \\#\n\n* \\- literal\n\n> 1\\. item\n\n"
+        r"**bold** _italic_ \![link](/a) \*fallback\* `*code*`"
+    )
+
+
+def test_literal_text_escaping_preserves_retained_html_content() -> None:
+    html = "<table><tr><td>*literal*</td></tr></table>"
+    assert transform(html) == (
+        "<table><tbody><tr><td>&#42;literal&#42;</td></tr></tbody></table>"
+    )
+    assert transform(html, escape_text=False) == (
+        "<table><tbody><tr><td>*literal*</td></tr></tbody></table>"
+    )
+    assert "\n&#35; heading\n" in transform(
+        "<table><tr><td><p># heading</p></td></tr></table>"
+    )
+
+
+@pytest.mark.parametrize(("escape_text", "expected"), [(True, r"\# heading"), (False, "# heading")])
+def test_adapt_respects_literal_text_setting(escape_text: bool, expected: str) -> None:
+    transformer = Transformer(escape_text=escape_text)
+    fragment = parseFragment("<p># heading</p>")
+    assert MarkdownSerializer().render(transformer.adapt(fragment)) == expected

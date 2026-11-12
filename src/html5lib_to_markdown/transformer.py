@@ -52,6 +52,7 @@ from .tokens import TokenStartBlockquote
 from .tokens import TokenStartCode
 from .tokens import TokenStrong
 from .utils import clean_token_attributes
+from .utils import escape_markdown_text
 from .utils import is_list_upcoming
 from .utils import RE_newlines_3p
 from .utils import RE_space_tab_only
@@ -471,6 +472,8 @@ def to_markdown(
     character_unordered_listitem=None,
     pre_behavior=None,
     is_fragment=None,
+    *,
+    escape_text: bool = True,
 ):
     """
     translate a html5lib iterable tree to markdown
@@ -540,6 +543,9 @@ def to_markdown(
 
     :arg bool is_fragment: is this being processed as a fragment? if so, we
     should pop out the container.
+
+    :arg bool escape_text: escape Markdown punctuation in ordinary HTML text
+    nodes. Set to False to preserve embedded Markdown syntax.
     """
     # defaults
     allowed_tags = MARKDOWN_TAGS_PASSTHROUGH if allowed_tags is None else allowed_tags
@@ -567,6 +573,7 @@ def to_markdown(
         "a": 0,
         "a__tag": 0,
         "p-div": 0,
+        "html_block": 0,
         "_stack": [],
         "blockquote": 0,  # depth tracing
         "codeblock": None,  # True/False
@@ -965,8 +972,10 @@ def to_markdown(
                     token = clean_token_attributes(token, name, allowed_tags_attributes)
                     if name in allowed_tags_blocks:
                         if ttype == tt_StartTag:
+                            _in["html_block"] += 1
                             return (TokenStartBlockElement(name), token)
                         elif ttype == tt_EndTag:
+                            _in["html_block"] -= 1
                             return (token, TokenEndBlockElement(name))
                     return token
 
@@ -991,7 +1000,15 @@ def to_markdown(
                     alt = token["data"].get((None, "alt"))
                     title = token["data"].get((None, "title"))
                     if not src:
-                        return TokenCharactersSplit(alt) if alt else None
+                        if not alt:
+                            return None
+                        in_html = bool(_in["html_block"])
+                        fallback = TokenCharactersSplit(
+                            escape_markdown_text(alt, in_html=in_html) if escape_text else alt
+                        )
+                        if in_html and escape_text:
+                            fallback["_md_escaped_html"] = True
+                        return fallback
                     reference = (
                         reference_number(src, title) if reference_style_img else None
                     )
@@ -1050,6 +1067,12 @@ def to_markdown(
                 _data = _data.replace("\n", " ")
                 _data = RE_space_tab_p.sub(" ", _data)
 
+            in_html = bool(_in["html_block"])
+            if escape_text:
+                _data = escape_markdown_text(_data, in_html=in_html)
+                if in_html:
+                    token["_md_escaped_html"] = True
+
             # remove leading/trailing whitespace
             token["data"] = _data.strip()
 
@@ -1061,7 +1084,10 @@ def to_markdown(
             if len(_lines) > 1:
                 _stack = []
                 for _line in _lines:
-                    _stack.append(TokenCharactersSplit(_line))
+                    line = TokenCharactersSplit(_line)
+                    if in_html and escape_text:
+                        line["_md_escaped_html"] = True
+                    _stack.append(line)
                     _stack.append(TokenNewline())
                 # pop the last off
                 _stack.pop()
@@ -1545,6 +1571,9 @@ class MarkdownSerializer(HTMLSerializer):
             html_tags: list[str] = []
             for token in domtree:
                 token_type = token["type"]
+                if token.get("_md_escaped_html") and token_type == "Characters":
+                    yield {**token, "type": "SpaceCharacters"}
+                    continue
                 if token_type == "StartTag":
                     html_tags.append(token["name"])
                 elif token_type == "EndTag" and html_tags and html_tags[-1] == token["name"]:
@@ -1624,6 +1653,8 @@ class Transformer(object):
         allowed_tags_blocks=None,
         allowed_tags_attributes=None,
         serializer=None,
+        *,
+        escape_text: bool = True,
     ):
         """
         Initializes a ``Transformer``.
@@ -1649,6 +1680,8 @@ class Transformer(object):
         :arg list allowed_tags: see ``to_markdown``
         :arg list allowed_tags_blocks: see ``to_markdown``
         :arg dict allowed_tags_attributes: see ``to_markdown``
+        :arg bool escape_text: escape Markdown syntax in ordinary HTML text
+        nodes. Set to False to preserve embedded Markdown syntax.
 
         :arg object serializer:  an instance of a ``html5lib.serializer.HTMLSerializer``
         object. default is ``None``, which will create an instance of this
@@ -1674,6 +1707,7 @@ class Transformer(object):
         self.allowed_tags = allowed_tags
         self.allowed_tags_blocks = allowed_tags_blocks
         self.allowed_tags_attributes = allowed_tags_attributes
+        self.escape_text = escape_text
 
         self._builder = getTreeBuilder("etree")
         self._walker = getTreeWalker("etree")
@@ -1734,6 +1768,7 @@ class Transformer(object):
             character_italicbold=self._character_italicbold,
             character_unordered_listitem=self._character_unordered_listitem,
             is_fragment=True,
+            escape_text=self.escape_text,
         )
         for filter_class in self.filters:
             dom_markdown = filter_class(source=dom_markdown)
@@ -1769,6 +1804,7 @@ class Transformer(object):
             character_italicbold=self._character_italicbold,
             character_unordered_listitem=self._character_unordered_listitem,
             is_fragment=False,
+            escape_text=self.escape_text,
         )
         return dom_markdown
 
