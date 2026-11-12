@@ -6,6 +6,7 @@
 """
 
 # stdlib
+from itertools import islice
 import logging
 import os
 import re
@@ -1174,6 +1175,7 @@ def to_markdown(
     # - goal 1: correct whitespace
     # - goal 2: toggle blockquote
     token_stack__post = []
+    rule_positions: list[int] = []
     _last_codeblock = None
     _codeblocked = None
     for (token_idx, token) in enumerate(token_stack):
@@ -1284,13 +1286,16 @@ def to_markdown(
                 continue
 
         elif _t_md == tt_md_TokenHR:
-            _newlines_ensure = 1
-            _newline_blockquote = _t_md_blockquote if _newlines_ensure else None
             token_stack__post = cleanup_space_backwards(
                 token_stack__post,
-                newlines_ensure=_newlines_ensure,
-                newline_blockquote=_newline_blockquote,
+                newlines_ensure=1,
+                newline_blockquote=_t_md_blockquote,
             )
+            # Keep the rule intact while its neighbors' spacing is normalized.
+            token["data"] = token["data"].strip()
+            rule_positions.append(len(token_stack__post))
+            token_stack__post.append(token)
+            continue
 
         elif _t_md in _tts_md_code:
             if _t_md == tt_md_TokenStartCode:
@@ -1366,25 +1371,21 @@ def to_markdown(
 
     token_stack = token_stack__post
 
-    # step 4b
-    # TODO: migrate this situation into the previous loop
-    # TODO: probably handled by isolating this into a protected block
-    token_stack__post = []
-    for (token_idx, token) in enumerate(token_stack):
-        _t_md = token.get("_md_type")
-        if _t_md not in (tt_md_TokenHR,):
-            token_stack__post.append(token)
-        else:
-            _bq = token.get("_md_bq")
-            _cb = token.get("_md_cb")
-            t1 = _contextual_TokenNewlines(newlines=1, blockquoted=_bq, codeblocked=_cb)
-            token["data"] = TokenHR()[
-                "data"
-            ].strip()  # replace this with a raw TokenHR's data
-            t3 = _contextual_TokenNewlines(newlines=1, blockquoted=_bq, codeblocked=_cb)
-            token_stack__post.extend([t1, token, t3])
-
-    token_stack = token_stack__post
+    if rule_positions:
+        # Rules are significant tokens, so whitespace cleanup leaves their indices stable.
+        normalized_tokens = iter(token_stack)
+        token_stack = []
+        next_index = 0
+        for position in rule_positions:
+            token_stack.extend(islice(normalized_tokens, position - next_index))
+            rule = next(normalized_tokens)
+            blockquoted = rule.get("_md_bq")
+            codeblocked = rule.get("_md_cb")
+            token_stack.append(_contextual_TokenNewlines(1, blockquoted, codeblocked))
+            token_stack.append(rule)
+            token_stack.append(_contextual_TokenNewlines(1, blockquoted, codeblocked))
+            next_index = position + 1
+        token_stack.extend(normalized_tokens)
 
     # !!!: STEP 5- last postprocess
     # a) strip off trailing spaces

@@ -1,4 +1,5 @@
 Unreleased
+  * normalize horizontal rule spacing without scanning the full token list again
   * require Python 3.10 or newer and remove Python 2 compatibility code
   * fix link and image Markdown escaping and reference numbering
   * preserve preformatted whitespace and accept html5lib etree input in adapt()

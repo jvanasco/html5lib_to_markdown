@@ -5,32 +5,6 @@ Identified Tasks
 ** integrate tests from antimarkdown
 ** integrate tests from markdownify
 
-2. step "4b" in `to_markdown` should be eliminated
-	in this step, we alter the existing dom to swap the ``TokenHR`` with (``TokenNewline``, ``TokenHR``(stripped), ``TokenNewline``)
-	a better approach would be to surround the ``TokenHR`` in a special block
-	
-	``TokenProtectedBlock``
-	
-	this could potentially be applied to ``TokenHN`` too
-	
-	``TokenProtectedBlock`` would protect the contents from having their newlines adjusted
-	
-	for example:
-
-		TokenProtectedBlock
-		TokenHR
-		TokenProtectedBlock
-		TokenNewlines(2)
-		TokenCharacters
-		
-	when analyzing the above for cleanup, The TokenNewlines(2) would consolidate to a TokenNewslines(1) but not be able to alter the TokenProtectedBlock
-
-3. Bold+Italic text
-	three asterisk/underscore
-	a `character_italicbold` customization hook was added, however it is not rendered.  this requires searching in/out of the tags (like with a/img tags and code blocks)
-	perhaps this can be solved with a regex?
-
-4. are we escaping characters correctly?
 
 5. can there be some performance improvements?
 
@@ -60,3 +34,40 @@ Misc Readings for Reference
 
 Dealing with types of content and blocks
 	https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Phrasing_content	
+
+Tabled
+======
+
+
+Concept:
+    step "4b" in `to_markdown` should be eliminated
+
+    Request:
+        in this step, we alter the existing dom to swap the ``TokenHR`` with (``TokenNewline``, ``TokenHR``(stripped), ``TokenNewline``)
+        a better approach would be to surround the ``TokenHR`` in a special block
+        
+        ``TokenProtectedBlock``
+        
+        this could potentially be applied to ``TokenHN`` too
+        
+        ``TokenProtectedBlock`` would protect the contents from having their newlines adjusted
+        
+        for example:
+    
+            TokenProtectedBlock
+            TokenHR
+            TokenProtectedBlock
+            TokenNewlines(2)
+            TokenCharacters
+            
+        when analyzing the above for cleanup, The TokenNewlines(2) would consolidate to a TokenNewslines(1) but not be able to alter the TokenProtectedBlock
+
+    Analysis:
+
+        I agree with the goal in [TODO #2]. A horizontal rule should carry its line-break requirements through whitespace cleanup. I’d keep that behavior specific to TokenHR for now. A generic TokenProtectedBlock would add a new abstraction for one demonstrated case.
+        
+        Step 4 already treats TokenHR specially when adjusting surrounding whitespace. Step 4b then walks the entire token list to split the rule into a leading newline, ---, and a trailing newline. That late split keeps the rule’s own line breaks out of the earlier cleanup, while preserving the blockquote prefix on each side. The order matters. For example, before<hr>after currently produces before\n\n---\nafter. Losing the blank line before --- could turn before into a Setext heading. [transformer.py (line 1286)]
+        
+        I’d make TokenHR explicitly own those line breaks and expand it once the spacing decisions for its neighbors are settled. I’d first lock down the current output for rules next to plain text, paragraphs, other rules, and code blocks, as well as rules at blockquote boundaries. Those cases would tell us whether step 4b can be folded into step 4 without changing either the rendered Markdown or the tokens returned by adapt().
+        
+        I’d leave headings alone until there’s a concrete case for the same treatment. TokenHNStart owns the heading prefix, while the heading text arrives in separate tokens and the surrounding block markers handle its spacing. Removing step 4b is primarily a maintainability improvement. It saves one linear pass and one temporary list, and the speedup is unmeasured. No files changed.	

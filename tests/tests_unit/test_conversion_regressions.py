@@ -128,3 +128,33 @@ def test_adapt_accepts_etree_documents_and_fragments() -> None:
 def test_adapt_rejects_invalid_tree_input() -> None:
     with pytest.raises(TypeError, match="etree"):
         Transformer().adapt(ElementTree())
+
+
+@pytest.mark.parametrize(
+    ("html", "expected"),
+    [
+        ("<hr>", "---"),
+        ("<hr>after", "---\nafter"),
+        ("before<hr>after", "before\n\n---\nafter"),
+        ("<p>before</p><hr><p>after</p>", "before\n\n---\n\nafter"),
+        ("<hr><hr>", "---\n\n---"),
+        ("<blockquote><hr></blockquote><p>outside</p>", "> ---\n> \noutside"),
+        ("<pre><code>before</code></pre><hr>", "    before\n\n---"),
+        ("<h2>Title</h2><hr><h3>Next</h3>", "## Title\n\n---\n\n### Next"),
+    ],
+)
+def test_horizontal_rule_spacing(html: str, expected: str) -> None:
+    assert transform(html) == expected
+
+
+def test_adapt_keeps_rule_line_breaks_as_separate_tokens() -> None:
+    fragment = parseFragment("<blockquote><hr></blockquote><p>outside</p>")
+    tokens = Transformer().adapt(fragment)
+
+    assert [(token["type"], token["data"], token.get("_md_bq")) for token in tokens] == [
+        ("Characters", "> ", 1),
+        ("Characters", "---", 1),
+        ("Characters", "\n> ", 1),
+        ("SpaceCharacters", "\n", None),
+        ("Characters", "outside", None),
+    ]
