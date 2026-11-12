@@ -87,7 +87,9 @@ If you just need a standard and pure "HTML to Markdown" convertor, I recommend t
 
 ## License & Copyright
 
-This package is available under the MIT License.  The code and tests are: Copyright 2019 Jonathan Vanasco (jonathan@findmeon.com)
+This package is available under the MIT License.
+
+The code and tests are: Copyright 2019-2026 Jonathan Vanasco (jvanasco@2xlp.com)
 
 Additional code and tests are isolated in the tests_working directory (and soon to be tests), with copyright attributed to the antimarkdown and markdownify projects.  both are used under the MIT License and credited in the source
 
@@ -102,4 +104,3 @@ Additional code and tests are isolated in the tests_working directory (and soon 
 ## TODO
 
 See [TODO.txt](TODO.txt)
-
