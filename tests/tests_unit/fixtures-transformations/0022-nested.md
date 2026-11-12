@@ -1,3 +1,3 @@
-This is our **description!** &amp;
+This is our **description\!** &amp;
 
-nice!
+nice\!

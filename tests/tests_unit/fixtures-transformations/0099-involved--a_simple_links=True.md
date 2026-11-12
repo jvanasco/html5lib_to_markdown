@@ -2,7 +2,7 @@ foo
 
 bar rab ooo bar rab
 
-biz ![Image](src.png "title title") bam ![Image](src.png) none \n\np1 lorem ipsum\n\np2
+biz ![Image](src.png "title title") bam ![Image](src.png) none \\n\\np1 lorem ipsum\\n\\np2
 
 * list1 item 1
 * list1 item 2
@@ -29,21 +29,21 @@ _em_
 <!-- comment here! -->
 <!-- comment here too ! | foo="bar" data-foo="[goo]" -->
 
-this is an example of `inline code`
+this is an example of \`inline code\`
 
 `code <b> nothing escaped here </b> block!`
 
 <pre>pre  <b> nothing escaped here </b>  block!</pre>
 
-`There is a literal backtick (`) here.`
+``There is a literal backtick (`) here.``
 
 foo
 
 ---
 
-A single backtick in a code span: ```
+A single backtick in a code span: `` ` ``
 
-A backtick-delimited string in a code span: ``foo``
+A backtick-delimited string in a code span: `` `foo` ``
 
 # **h1** h1 h1
 

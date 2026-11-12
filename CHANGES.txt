@@ -1,4 +1,15 @@
-0.0.6
+1.0.0
+  * escape Markdown syntax in ordinary HTML text by default. Set escape_text=False to preserve it
+  * preserve backticks and decoded text in inline code, and keep literal greater-than signs distinct from blockquote markers
+  * honor character_italicbold for matching bold and italic spans when configured
+  * normalize horizontal rule spacing without scanning the full token list again
+  * require Python 3.10 or newer and remove Python 2 compatibility code
+  * fix link and image Markdown escaping and reference numbering
+  * preserve preformatted whitespace and accept html5lib etree input in adapt()
+  * moved package metadata to setup.cfg and replaced tox with direct pytest runs
+  * added Python 3.11 through 3.15 to the package classifiers and CI matrix
+
+ 0.0.6
   * fixed an error where allowed tags, such as `a` and `img`, were not
     processed correctly. this is was due to the logic sections used to clean
     the `data` payloads when (i) leading and (ii) trailing spaces were not

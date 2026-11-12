@@ -1,4 +1,4 @@
-# heading **ok** **bold** **tab before bold**
+# heading \*\*ok\*\* **bold** **tab before bold**
 
 this is some body text
 

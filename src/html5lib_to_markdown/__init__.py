@@ -1,20 +1,14 @@
-from __future__ import print_function
-
 from .transformer import Transformer
 
 # ==============================================================================
 
-__VERSION__ = "0.0.6"
+__VERSION__ = "1.0.0"
 
 # ------------------------------------------------------------------------------
 
 
-def transform(text):
-    """
-    This is a utility function that creates a Transformer with some defaults
-    and then transforms text with it.
-    Most users will want to create their own Transformer and utilize that instead.
-    """
+def transform(text: str, *, escape_text: bool = True) -> str:
+    """Convert HTML to Markdown, escaping literal text by default."""
     transformer = Transformer(
         a_as_tag=False,
         img_as_tag=False,
@@ -22,6 +16,7 @@ def transform(text):
         reference_style_link=False,
         reference_style_img=False,
         div_as_block=True,
+        escape_text=escape_text,
     )
     return transformer.transform(text)
 
