@@ -10,9 +10,10 @@ from itertools import islice
 import logging
 import os
 import re
-from typing import Any
+from typing import Any, Iterable, Iterator
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import ElementTree
+from xml.sax.saxutils import escape
 
 # pypi
 from html5lib import getTreeBuilder
@@ -32,6 +33,7 @@ from .tokens import TokenAMarkdown
 from .tokens import TokenAMarkdownReference
 from .tokens import TokenAMarkdownSimple
 from .tokens import TokenAStartTag
+from .tokens import TokenBoldItalic
 from .tokens import TokenCharactersSplit
 from .tokens import TokenEmphasis
 from .tokens import TokenEndBlockElement
@@ -73,6 +75,7 @@ FRAGMENT_TYPE = "html5libmarkdown"
 FRAGMENT_ID = "__CUSTOM_WRAPPER__"
 wrapped = '<%s id="%s">%%s</%s>' % (FRAGMENT_TYPE, FRAGMENT_ID, FRAGMENT_TYPE)
 _AUTOLINK_URL = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]{1,31}:[^\s<>\x00-\x20\x7f]*")
+_EMPHASIS_TAGS = {"em": "italic", "i": "italic", "strong": "bold", "b": "bold"}
 # Start at the beginning of each whitespace run so it is scanned only once.
 _TRAILING_LINE_SPACE = re.compile(r"(?<![^\S\n])[^\S\n]+(?=\n)")
 
@@ -170,6 +173,7 @@ def token_apply_prefix(token, blockquote=None, codeblock=None):
         _prefix = ""
         if blockquote:
             _prefix = (">" * blockquote) + " "
+            token["_md_quote_prefix"] = _prefix
         if codeblock:
             _prefix += " " * codeblock * 4
         token["data"] = token["data"].replace("\n", "\n%s" % _prefix)
@@ -365,6 +369,88 @@ def _render_code_as_block_frontwards(stack: list[dict[str, Any]], idx: int) -> b
     return False
 
 
+def _render_inline_code(
+    tokens: list[dict[str, Any]], start: int
+) -> tuple[str, str, int] | None:
+    """Render text-only code with a delimiter longer than its backtick runs."""
+    parts: list[str] = []
+    for index in range(start + 1, len(tokens)):
+        token = tokens[index]
+        if token.get("_md_type") == tt_md_TokenEndCode:
+            code = "".join(parts).replace("\n", " ")
+            delimiter = "`" * (1 + max(map(len, re.findall(r"`+", code)), default=0))
+            payload = code
+            if code.startswith("`") or code.endswith("`") or (
+                code.startswith(" ") and code.endswith(" ") and code.strip(" ")
+            ):
+                code = f" {code} "
+            return f"{delimiter}{code}{delimiter}", payload, index
+        if token.get("_md_type") or token["type"] not in (
+            "Characters",
+            "SpaceCharacters",
+        ):
+            break
+        parts.append(token["data"])
+    return None
+
+
+def _combined_emphasis_positions(
+    tokens: list[dict[str, Any]], character: str
+) -> dict[int, bool]:
+    """Map coextensive bold and italic tags to combined or suppressed markers."""
+    opening: list[int] = []
+    positions: dict[int, bool] = {}
+    for index, token in enumerate(tokens):
+        name = token.get("name")
+        if name not in _EMPHASIS_TAGS:
+            continue
+        if token["type"] == "StartTag":
+            opening.append(index)
+            continue
+        if (
+            token["type"] != "EndTag"
+            or not opening
+            or tokens[opening[-1]]["name"] != name
+        ):
+            continue
+        inner = opening.pop()
+        if not opening or inner in positions or index <= inner + 1:
+            continue
+        outer = opening[-1]
+        outer_name = tokens[outer]["name"]
+        if inner != outer + 1 or _EMPHASIS_TAGS[outer_name] == _EMPHASIS_TAGS[name]:
+            continue
+        outer_end = index + 1
+        if outer_end >= len(tokens):
+            continue
+        closing = tokens[outer_end]
+        if closing["type"] != "EndTag" or closing.get("name") != outer_name:
+            continue
+        first, last = tokens[inner + 1], tokens[index - 1]
+        if "SpaceCharacters" in (first["type"], last["type"]):
+            continue
+        if first.get("name") in _EMPHASIS_TAGS or last.get("name") in _EMPHASIS_TAGS:
+            continue
+
+        neighbors = (
+            (tokens[outer - 1], -1) if outer else (None, -1),
+            (tokens[outer_end + 1], 0) if outer_end + 1 < len(tokens) else (None, 0),
+        )
+        for neighbor, edge in neighbors:
+            if neighbor is None:
+                continue
+            if neighbor.get("name") in _EMPHASIS_TAGS:
+                break
+            if neighbor["type"] != "Characters" or not neighbor["data"]:
+                continue
+            adjacent = neighbor["data"][edge]
+            if adjacent == character or (character == "_" and adjacent.isalnum()):
+                break
+        else:
+            positions.update({outer: True, inner: False, index: False, outer_end: True})
+    return positions
+
+
 def to_markdown(
     dom_walker,
     a_as_tag=True,
@@ -441,8 +527,8 @@ def to_markdown(
     :arg string character_bold: What character should be the default for bold text.
     Markdown supports an asterisk "*" or underscores "_"; and will render 2 of this character. Default: "*"
 
-    :arg string character_italicbold: What character should be the default for italic+bold text.
-    Markdown supports an asterisk "*" or underscores "_"; and will render 3 of this character. Default: "*"
+    :arg string character_italicbold: Optional "*" or "_" for coextensive bold
+    and italic spans. By default the individual markers are preserved.
 
     :arg string character_unordered_listitem: What character should be the default for unordered list items.
     Markdown supports an asterisk "*" or dash "-" or plus '+'; and will render 1 of this character. Default: "*"
@@ -470,9 +556,6 @@ def to_markdown(
 
     character_italic = character_italic if character_italic in ("*", "_") else "_"
     character_bold = character_bold if character_bold in ("*", "_") else "*"
-    character_italicbold = (
-        character_italicbold if character_italicbold in ("*", "_") else "*"
-    )
     character_unordered_listitem = (
         character_unordered_listitem
         if character_unordered_listitem in ("*", "-", "+")
@@ -506,6 +589,9 @@ def to_markdown(
     # searching forwards and backwards was needed, so iterating over them is used
     list_walker = [i for i in dom_walker]
     len_walker = len(list_walker)
+    combined_emphasis: dict[int, bool] = {}
+    if character_italicbold in ("*", "_"):
+        combined_emphasis = _combined_emphasis_positions(list_walker, character_italicbold)
 
     def _handle_bare_link(
         name: str, token: dict[str, Any]
@@ -693,14 +779,13 @@ def to_markdown(
                     _in["_stack"].pop()
                     return None
 
-            elif name in ("i", "em"):
-                # note: i, em
-                # StartTag/EndTag are the same
-                return TokenEmphasis(character_italic)
-
-            elif name in ("b", "strong"):
-                # note: b, strong
-                # StartTag/EndTag are the same
+            elif name in _EMPHASIS_TAGS:
+                if token_idx in combined_emphasis:
+                    if combined_emphasis[token_idx]:
+                        return TokenBoldItalic(character_italicbold)
+                    return None
+                if _EMPHASIS_TAGS[name] == "italic":
+                    return TokenEmphasis(character_italic)
                 return TokenStrong(character_bold)
 
             elif name == "a":
@@ -1178,7 +1263,10 @@ def to_markdown(
     rule_positions: list[int] = []
     _last_codeblock = None
     _codeblocked = None
+    inline_code_end = -1
     for (token_idx, token) in enumerate(token_stack):
+        if token_idx <= inline_code_end:
+            continue
         _t_md = token.get("_md_type")
         _t_md_blockquote = token.get("_md_bq", None)
         token_prev = token_stack[token_idx - 1] if token_idx else None
@@ -1333,6 +1421,13 @@ def to_markdown(
                             "DEBUG!!!! edge. this has never been triggered"
                         )
                 else:
+                    inline_code = _render_inline_code(token_stack, token_idx)
+                    if inline_code is not None:
+                        data, payload, inline_code_end = inline_code
+                        span = TokenCharactersSplit(data)
+                        span["_md_raw_code"] = payload
+                        token_stack__post.append(span)
+                        continue
                     token["type"] = "Characters"
                     token["data"] = "`"  # INLINE CODE
                     _last_codeblock = "INLINE"
@@ -1427,6 +1522,8 @@ def to_markdown(
                     # in the case of an OrderedDict, we clean the tag via `clean_token_attributes`
                     if isinstance(_data, str):
                         _ft["data"] = _data.lstrip("\n")
+                        if _data.startswith("\n") and _ft.get("_md_quote_prefix"):
+                            _ft["_md_quote_at_start"] = True
                 break
         else:
             break
@@ -1439,29 +1536,42 @@ def to_markdown(
 
 
 class MarkdownSerializer(HTMLSerializer):
-    def serialize(self, domtree, encoding=None):
-        """
-        If the token starts with a newline, there may be prefixes.
-        Our tokens are designed so prefixing only happens on the newline elements,
-        so this should not normal affect text elements
+    def serialize(
+        self, domtree: Iterable[dict[str, Any]], encoding: str | None = None
+    ) -> Iterator[str | bytes]:
+        """Preserve generated quote markers and literal inline code."""
 
-        ``MarkdownSerializer`` unescapes the blockquote characters in markdown
-        text from "&gt;" to ">", producing valid Markdown but invalid HTML.
-        """
-        for (idx, token) in enumerate(
-            super(MarkdownSerializer, self).serialize(domtree, encoding)
-        ):
-            if token.startswith("\n") or (idx == 0):
-                # html5lib encoded the leading '>' to '&gt'; we need to encode it back.
-                # the most accurate way so far, is to split the token on a space char, and only transform the 0 element.
-                # we may have a 'newlines=2' object, so try that.
-                _token = token.split(" ")
-                _token[0] = _token[0].replace("&gt;", ">")
-                if len(_token) >= 2:
-                    if _token[1].startswith("\n&gt;"):
-                        _token[1] = _token[1].replace("&gt;", ">")
-                token = " ".join(_token)
-            yield token
+        def prepare_tokens() -> Iterator[dict[str, Any]]:
+            html_tags: list[str] = []
+            for token in domtree:
+                token_type = token["type"]
+                if token_type == "StartTag":
+                    html_tags.append(token["name"])
+                elif token_type == "EndTag" and html_tags and html_tags[-1] == token["name"]:
+                    html_tags.pop()
+
+                if "_md_raw_code" in token:
+                    payload = token["_md_raw_code"]
+                    if html_tags and any(char in payload for char in "<>&"):
+                        # Retained HTML blocks can bypass Markdown's code-span parsing.
+                        yield {"type": "StartTag", "name": "code", "data": {}}
+                        yield {"type": "Characters", "data": payload}
+                        yield {"type": "EndTag", "name": "code"}
+                    else:
+                        yield {**token, "type": "SpaceCharacters"}
+                    continue
+                prefix = token.get("_md_quote_prefix")
+                if prefix and token_type == "Characters":
+                    data = escape(token["data"])
+                    escaped_prefix = escape(prefix)
+                    if token.get("_md_quote_at_start") and data.startswith(escaped_prefix):
+                        data = prefix + data[len(escaped_prefix) :]
+                    data = data.replace(f"\n{escaped_prefix}", f"\n{prefix}")
+                    yield {**token, "type": "SpaceCharacters", "data": data}
+                else:
+                    yield token
+
+        yield from super().serialize(prepare_tokens(), encoding)
 
 
 class Transformer(object):
@@ -1543,8 +1653,8 @@ class Transformer(object):
         :arg object serializer:  an instance of a ``html5lib.serializer.HTMLSerializer``
         object. default is ``None``, which will create an instance of this
         package's ``MarkdownSerializer`` with some default values.
-        ``MarkdownSerializer`` unescapes the blockquote characters in markdown
-        text from "&gt;" to ">", producing valid Markdown but invalid HTML.
+        ``MarkdownSerializer`` preserves generated blockquote markers and
+        literal inline code when serializing the converted tokens.
         """
         self.filters = filters or []
 

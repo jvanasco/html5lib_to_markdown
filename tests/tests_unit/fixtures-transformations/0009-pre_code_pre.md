@@ -34,9 +34,9 @@ back in p.
 
 <pre>pre  <b> nothing escaped here </b>  block!</pre>
 
-`There is a literal backtick (`) here.`
+``There is a literal backtick (`) here.``
 
-`There is a literal backtick (`) here.`
+``There is a literal backtick (`) here.``
 
 `<p>p1</p><p>p2</p><p>p3</p>`
 

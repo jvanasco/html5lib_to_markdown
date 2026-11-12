@@ -158,3 +158,47 @@ def test_adapt_keeps_rule_line_breaks_as_separate_tokens() -> None:
         ("SpaceCharacters", "\n", None),
         ("Characters", "outside", None),
     ]
+
+
+@pytest.mark.parametrize(
+    ("code", "expected"),
+    [
+        ("a`b", "``a`b``"),
+        ("``", "``` `` ```"),
+        ("&lt;x&gt; &amp;", "`<x> &`"),
+        (" padded ", "`  padded  `"),
+        ("a\nb", "`a b`"),
+    ],
+)
+def test_inline_code_preserves_literal_content(code: str, expected: str) -> None:
+    assert transform(f"<p>Run <code>{code}</code> now</p>") == f"Run {expected} now"
+
+
+def test_inline_code_preserves_escaping_inside_retained_html() -> None:
+    html = "<table><tr><td>Run <code>&lt;x&gt;</code> now</td></tr></table>"
+    assert "<code>&lt;x&gt;</code>" in transform(html)
+
+
+def test_literal_greater_than_is_distinct_from_blockquote_prefixes() -> None:
+    assert transform("<p>&gt; literal</p>") == "&gt; literal"
+    assert transform("<blockquote><p>&gt; literal</p></blockquote>") == "> &gt; literal"
+
+
+@pytest.mark.parametrize(
+    ("html", "character", "expected"),
+    [
+        ("<strong><em>x</em></strong>", "*", "***x***"),
+        ("<i><b>x</b></i>", "_", "___x___"),
+        ("<strong>one <em>two</em> three</strong>", "*", "**one _two_ three**"),
+        ("a<strong><em>b</em></strong>c", "_", "a**_b_**c"),
+        ("a<strong><em>b</em></strong>c", "*", "a***b***c"),
+        ("<strong><em> x </em></strong>", "_", "**_ x _**"),
+    ],
+)
+def test_combined_emphasis_option(html: str, character: str, expected: str) -> None:
+    assert Transformer(character_italicbold=character).transform(html) == expected
+
+
+def test_default_keeps_separate_emphasis_markers() -> None:
+    assert transform("<strong><em>x</em></strong>") == "**_x_**"
+    assert transform("<em><strong>x</strong></em>") == "_**x**_"

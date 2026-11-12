@@ -1,4 +1,6 @@
 Unreleased
+  * preserve backticks and decoded text in inline code, and keep literal greater-than signs distinct from blockquote markers
+  * honor character_italicbold for matching bold and italic spans when configured
   * normalize horizontal rule spacing without scanning the full token list again
   * require Python 3.10 or newer and remove Python 2 compatibility code
   * fix link and image Markdown escaping and reference numbering

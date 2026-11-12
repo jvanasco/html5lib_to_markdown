@@ -35,15 +35,15 @@ this is an example of `inline code`
 
 <pre>pre  <b> nothing escaped here </b>  block!</pre>
 
-`There is a literal backtick (`) here.`
+``There is a literal backtick (`) here.``
 
 foo
 
 ---
 
-A single backtick in a code span: ```
+A single backtick in a code span: `` ` ``
 
-A backtick-delimited string in a code span: ``foo``
+A backtick-delimited string in a code span: `` `foo` ``
 
 # **h1** h1 h1
 
