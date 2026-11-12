@@ -1,6 +1,3 @@
-from __future__ import print_function
-from __future__ import unicode_literals
-
 """
 
 ``to_markdown`` is a html5lib tree adapter that expects a compatible tree
@@ -11,6 +8,10 @@ from __future__ import unicode_literals
 # stdlib
 import logging
 import os
+import re
+from typing import Any
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import ElementTree
 
 # pypi
 from html5lib import getTreeBuilder
@@ -20,9 +21,6 @@ from html5lib.constants import tokenTypes
 from html5lib.serializer import HTMLSerializer
 
 # local
-from ._compat import PY2
-from ._compat import string_types
-from ._compat import text_type
 from .markdown_info import MARKDOWN_TAGS_ATTRIBUTES
 from .markdown_info import MARKDOWN_TAGS_CORE
 from .markdown_info import MARKDOWN_TAGS_PASSTHROUGH
@@ -56,7 +54,6 @@ from .utils import RE_newlines_3p
 from .utils import RE_space_tab_only
 from .utils import RE_space_tab_p
 from .utils import RE_whitespace_meh
-from .utils import safe_title
 
 
 # ==============================================================================
@@ -74,6 +71,9 @@ DEBUG_STACKS_SIMPLE = bool(int(os.getenv("MD_DEBUG_STACKS_SIMPLE", 0)))
 FRAGMENT_TYPE = "html5libmarkdown"
 FRAGMENT_ID = "__CUSTOM_WRAPPER__"
 wrapped = '<%s id="%s">%%s</%s>' % (FRAGMENT_TYPE, FRAGMENT_ID, FRAGMENT_TYPE)
+_AUTOLINK_URL = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]{1,31}:[^\s<>\x00-\x20\x7f]*")
+# Start at the beginning of each whitespace run so it is scanned only once.
+_TRAILING_LINE_SPACE = re.compile(r"(?<![^\S\n])[^\S\n]+(?=\n)")
 
 # There will be a lot of comparisons to the TagType, so cast it to an `int`
 # 1/2: this is our mapping. it is the `html5lib.constants.tokenTypes`
@@ -340,16 +340,11 @@ def _render_code_as_block_backwards(stack_post):
     return True
 
 
-def _render_code_as_block_frontwards(stack, idx):
-    """
-    given a stack the postprocesser is currently looking at, iterate forwards
-    looking for a token that indicates our codelblock type
-    """
-    maxlen = len(stack)
+def _render_code_as_block_frontwards(stack: list[dict[str, Any]], idx: int) -> bool:
+    """Look for a surrounding block after the closing code token."""
     _endcode_seen = False
-    while idx <= maxlen:
-        idx += 1
-        tok = stack[idx]
+    for next_idx in range(idx + 1, len(stack)):
+        tok = stack[next_idx]
         tok_mdtype = tok.get("_md_type")
         if not _endcode_seen:
             if tok_mdtype == tt_md_TokenEndCode:
@@ -366,7 +361,7 @@ def _render_code_as_block_frontwards(stack, idx):
             if tok.get("name") == "pre":
                 tok["_md_code_compress"] = 1
                 return True
-    return True
+    return False
 
 
 def to_markdown(
@@ -495,8 +490,12 @@ def to_markdown(
         "_strip_script": 0,  # are we in a script? if so, we may be stripping it so this is treated separately
         "list": [],  # depth tracing, should be a list of lists, where main list is depth and inner list is a dict of type+count that we're on
     }
-    _referenced_links__order = []
-    _referenced_links__data = {}
+    references: dict[str, tuple[int, str | None]] = {}
+
+    def reference_number(destination: str, title: str | None) -> int:
+        """Assign a stable number and retain the first title for a destination."""
+        number, _ = references.setdefault(destination, (len(references) + 1, title))
+        return number
 
     # this will be a list of nodes
     token_stack = []
@@ -507,19 +506,13 @@ def to_markdown(
     list_walker = [i for i in dom_walker]
     len_walker = len(list_walker)
 
-    def _handle_bare_link(name, token):
-        """this logic can be invoked in multiple places"""
-        _path_components = list(token.get("data").items())
-        if len(_path_components) == 1:
-            _path = _path_components
-        else:
-            # !!!: this bit is weird.
-            if PY2:
-                _path = [_path_components[1], _path_components[0]]
-                if len(_path_components) > 2:
-                    _path.extend(_path_components[2:])
-            else:
-                _path = _path_components
+    def _handle_bare_link(
+        name: str, token: dict[str, Any]
+    ) -> dict[str, Any] | tuple[dict[str, Any], ...] | None:
+        """Reconstruct an angle-bracket URL from html5lib's tag tokens."""
+        _path = list(token["data"].items())
+        if not _path:
+            return None
         _url_reconstructed = "%s//%s" % (
             name,
             "/".join(i[0][1] for i in _path),
@@ -531,7 +524,11 @@ def to_markdown(
             return TokenAMarkdownSimple(_url_reconstructed)
 
         if a_as_tag:
-            return (TokenAStartTag, _url_reconstructed, TokenAEndTag)
+            return (
+                TokenAStartTag(_url_reconstructed),
+                TokenCharactersSplit(_url_reconstructed),
+                TokenAEndTag(_url_reconstructed),
+            )
         return TokenAMarkdown(_url_reconstructed, _url_reconstructed)
 
     def possibly_nested(func):
@@ -709,6 +706,9 @@ def to_markdown(
                 # note: a
                 if ttype == tt_StartTag:
                     _in["a"] += 1
+                    href = token["data"].get((None, "href"))
+                    if href is None and not a_as_tag:
+                        return None
 
                     def _render_tag__a():
                         if a_as_tag:
@@ -732,37 +732,24 @@ def to_markdown(
                             token, "a", allowed_tags_attributes
                         )
                     else:
-                        _href = None
-                        # _link_text
-                        _title = None
-                        _reference = None
-
-                        # grab the next token from
-                        if token_next["type"] != "Characters":
-                            raise ValueError("DEBUG!!!!! this should never happen!")
                         _link_text = token_next["data"]
                         token_next["data"] = ""
-                        for _key, _value in token["data"].items():
-                            if _key[1] == "href":
-                                _href = _value
-                            elif _key[1] == "title":
-                                _title = safe_title(_value)
+                        title = token["data"].get((None, "title"))
+                        if (
+                            a_simple_links
+                            and _link_text == href
+                            and not title
+                            and _AUTOLINK_URL.fullmatch(href)
+                        ):
+                            return TokenAMarkdownSimple(href)
 
-                        if a_simple_links:
-                            if (not _link_text or (_link_text == _href)) and (
-                                not _title
-                            ):
-                                return TokenAMarkdownSimple(_href)
-
-                        if reference_style_link:
-                            try:
-                                _reference = _referenced_links__order.index(_href)
-                            except ValueError:
-                                _referenced_links__order.append(_href)
-                                _referenced_links__data[_href] = (_title,)
-                                _reference = len(_referenced_links__order)
+                        reference = (
+                            reference_number(href, title)
+                            if reference_style_link and href
+                            else None
+                        )
                         return TokenAMarkdown(
-                            _href, _link_text, title=_title, reference=_reference
+                            href, _link_text, title=title, reference=reference
                         )
 
                 elif ttype == tt_EndTag:
@@ -870,7 +857,11 @@ def to_markdown(
                             if a_simple_links:
                                 return TokenAMarkdownSimple(_address)
                             if a_as_tag:
-                                return (TokenAStartTag, _address, TokenAEndTag)
+                                return (
+                                    TokenAStartTag(_address),
+                                    TokenCharactersSplit(_address[7:]),
+                                    TokenAEndTag(_address),
+                                )
                             return TokenAMarkdown(_address, _address[7:])
                         else:
                             return None
@@ -910,27 +901,16 @@ def to_markdown(
                     )
                     return token
                 else:
-                    _href = None
-                    _alt = None
-                    _title = None
-                    _reference = None
-                    for _key, _value in token["data"].items():
-                        if _key[1] == "src":
-                            _href = _value
-                        elif _key[1] == "alt":
-                            _alt = _value
-                        elif _key[1] == "title":
-                            _title = safe_title(_value)
-                    if reference_style_img:
-                        try:
-                            _reference = _referenced_links__order.index(_href)
-                        except ValueError:
-                            _referenced_links__order.append(_href)
-                            _referenced_links__data[_href] = (_title,)
-                            _reference = len(_referenced_links__order)
-
+                    src = token["data"].get((None, "src"))
+                    alt = token["data"].get((None, "alt"))
+                    title = token["data"].get((None, "title"))
+                    if not src:
+                        return TokenCharactersSplit(alt) if alt else None
+                    reference = (
+                        reference_number(src, title) if reference_style_img else None
+                    )
                     return TokenImgMarkdown(
-                        _href, alt=_alt, title=_title, reference=_reference
+                        src, alt=alt, title=title, reference=reference
                     )
 
             elif name == "br":
@@ -966,7 +946,7 @@ def to_markdown(
             # note: tokenType Characters
 
             # dereference this first
-            _data = token["data"]
+            _data = _TRAILING_LINE_SPACE.sub("", token["data"])
 
             # remove extraneous newlines
             _data = RE_newlines_3p.sub("\n\n", _data)
@@ -1032,7 +1012,7 @@ def to_markdown(
                     return token
 
             # ok, process it...
-            _data = token["data"]
+            _data = _TRAILING_LINE_SPACE.sub("", token["data"])
             _newlines = None
             if _data == "\n\n":
                 token = TokenNewlines()
@@ -1169,7 +1149,7 @@ def to_markdown(
                 token_stack = token_stack[1:-1]
 
     # !!!: STEP 3- merge in any link references for img/a
-    if _referenced_links__order:
+    if references:
         _last_sig = stack__last_token(token_stack)
         if _last_sig:
             _t_md = _last_sig.get("_md_type")
@@ -1179,11 +1159,9 @@ def to_markdown(
                 _discarded = token_stack.pop()
             token_stack.append(TokenNewlines())
             token_stack.append(TokenStartBlockElement("reflinks-start"))
-            for (_idx, _href) in enumerate(_referenced_links__order):
-                _reference = _idx + 1
-                (_title,) = _referenced_links__data[_href]
+            for href, (number, title) in references.items():
                 token_stack.append(TokenNewline())
-                tok = TokenAMarkdownReference(_href, _reference, _title)
+                tok = TokenAMarkdownReference(href, number, title)
                 token_stack.append(tok)
             token_stack.append(TokenEndBlockElement("reflinks-end"))
 
@@ -1380,6 +1358,9 @@ def to_markdown(
                 token_apply_prefix(
                     token, blockquote=_t_md_blockquote, codeblock=_codeblocked
                 )
+            if _codeblocked and _t_md is None and token["type"] == "SpaceCharacters":
+                # Literal code whitespace is part of the payload, including at EOF.
+                token["type"] = "Characters"
 
             token_stack__post.append(token)
 
@@ -1423,7 +1404,7 @@ def to_markdown(
                     # but if we have a raw img node...
                     #   _lt == OrderedDict([((None, 'src'), '/path/to/src')])
                     # in the case of an OrderedDict, we clean the tag via `clean_token_attributes`
-                    if isinstance(_data, string_types):
+                    if isinstance(_data, str):
                         _lt["data"] = _data.rstrip("\n")
                 break
         else:
@@ -1443,7 +1424,7 @@ def to_markdown(
                     # but if we have a raw img node...
                     #   _lt == OrderedDict([((None, 'src'), '/path/to/src')])
                     # in the case of an OrderedDict, we clean the tag via `clean_token_attributes`
-                    if isinstance(_data, string_types):
+                    if isinstance(_data, str):
                         _ft["data"] = _data.lstrip("\n")
                 break
         else:
@@ -1599,18 +1580,12 @@ class Transformer(object):
             )
         self._serializer = serializer
 
-    def transform(self, text):
+    def transform(self, text: str) -> str:
+        """Convert HTML text to Markdown, optionally retaining HTML tags.
+
+        Raises TypeError for inputs other than str.
         """
-        Cleans text and returns sanitized result as unicode
-
-        :arg str text: text to be cleaned
-
-        :returns: sanitized text as unicode
-
-        :raises TypeError: if ``text`` is not a text type
-
-        """
-        if not isinstance(text, string_types):
+        if not isinstance(text, str):
             message = (
                 "argument cannot be of '{name}' type, must be of text type".format(
                     name=text.__class__.__name__
@@ -1620,14 +1595,6 @@ class Transformer(object):
 
         if not text:
             return ""
-
-        # bleach.utils.force_unicode
-        if not isinstance(text, text_type):
-            text = text_type(text, "utf-8", "strict")
-
-        text = "\n".join(
-            [i.rstrip() for i in text.split("\n")]
-        )  # normalize trailing whitespace
 
         text = wrapped % text
         dom = self._parser.parseFragment(text)
@@ -1664,27 +1631,12 @@ class Transformer(object):
 
         return rendered
 
-    def adapt(self, dom):
-        """
-        invokes the tree adapter to_markdown
-
-        :arg str dom: text to be cleaned
-
-        :returns: adapted tree text as unicode
-
-        :raises TypeError: if ``text`` is not a text type
-
-        """
-        if not isinstance(dom, list):
-            message = (
-                "argument cannot be of '{name}' type, must be of list type".format(
-                    name=dom.__class__.__name__
-                )
-            )
-            raise TypeError(message)
-
-        if not dom:
-            return []
+    def adapt(self, dom: Element | ElementTree) -> list[dict[str, Any]]:
+        """Convert an html5lib etree document or fragment to Markdown tokens."""
+        if isinstance(dom, ElementTree):
+            dom = dom.getroot()
+        if not isinstance(dom, Element):
+            raise TypeError("dom must be an etree Element or ElementTree with a root")
 
         # Apply any filters after the
         dom_markdown = to_markdown(

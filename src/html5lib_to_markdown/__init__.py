@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from .transformer import Transformer
 
 # ==============================================================================
@@ -9,7 +7,7 @@ __VERSION__ = "0.0.6"
 # ------------------------------------------------------------------------------
 
 
-def transform(text):
+def transform(text: str) -> str:
     """
     This is a utility function that creates a Transformer with some defaults
     and then transforms text with it.

@@ -1,6 +1,3 @@
-from __future__ import print_function
-from __future__ import unicode_literals
-
 """
 This file contains replacement html5lib Tokens.
 Tokens are just Python dicts.
@@ -106,13 +103,23 @@ def TokenAEndTag(href):
     return {"type": "EndTag", "name": "a"}
 
 
-def TokenAMarkdown(href, _link_text, title=None, reference=None):
-    title = safe_title(title)
-    title = ' "%s"' % title if title else ""
+_LABEL_ESCAPES = str.maketrans({char: "\\" + char for char in "\\[]*_`"})
+_DESTINATION_ESCAPES = str.maketrans(
+    {char: "\\" + char for char in "\\()"}
+    | {chr(code): f"%{code:02X}" for code in (*range(33), ord("<"), ord(">"), 127)}
+)
+
+
+def TokenAMarkdown(
+    href: str, _link_text: str, title: str | None = None, reference: int | None = None
+) -> dict[str, str | int]:
+    """Render an inline or reference-style link."""
+    label = _link_text.translate(_LABEL_ESCAPES)
     if reference is not None:
-        data = "[%s][%s]" % (_link_text, reference)
+        data = f"[{label}][{reference}]"
     else:
-        data = "[%s](%s%s)" % (_link_text, href, title)
+        suffix = f' "{safe_title(title)}"' if title else ""
+        data = f"[{label}]({href.translate(_DESTINATION_ESCAPES)}{suffix})"
     token = {
         "type": "Characters",
         "data": data,
@@ -121,15 +128,17 @@ def TokenAMarkdown(href, _link_text, title=None, reference=None):
     return token
 
 
-def TokenAMarkdownReference(href, reference, title=None):
+def TokenAMarkdownReference(
+    href: str, reference: int, title: str | None = None
+) -> dict[str, str | int]:
     """
     [link text][1]
     [1]: <https://example.com> "Title"
 
     <a href="https://example.com" title="Title">link text</a>
     """
-    title = ' "%s"' % title if title else ""
-    data = "[%s]: %s%s" % (reference, href, title)
+    suffix = f' "{safe_title(title)}"' if title else ""
+    data = f"[{reference}]: {href.translate(_DESTINATION_ESCAPES)}{suffix}"
 
     token = {
         "type": "Characters",
@@ -266,13 +275,19 @@ def TokenHR():
     }
 
 
-def TokenImgMarkdown(src, alt=None, title=None, reference=None):
-    alt = alt or "Image"
-    title = ' "%s"' % title if title else ""
+def TokenImgMarkdown(
+    src: str,
+    alt: str | None = None,
+    title: str | None = None,
+    reference: int | None = None,
+) -> dict[str, str | int]:
+    """Render an inline or reference-style image."""
+    label = (alt or "Image").translate(_LABEL_ESCAPES)
     if reference is not None:
-        data = "[%s][%s]" % (alt, reference)
+        data = f"![{label}][{reference}]"
     else:
-        data = "![%s](%s%s)" % (alt, src, title)
+        suffix = f' "{safe_title(title)}"' if title else ""
+        data = f"![{label}]({src.translate(_DESTINATION_ESCAPES)}{suffix})"
     token = {
         "type": "Characters",
         "data": data,

@@ -1,7 +1,3 @@
-from __future__ import print_function
-from __future__ import unicode_literals
-
-
 # stdlib
 import re
 
@@ -21,10 +17,9 @@ RE_whitespace_meh = re.compile(r"\n[\ \t]+(?![\d\*])")
 
 
 # escaping attributes
-def safe_title(title):
-    if title and '"' in title:
-        title = title.replace('"', '\\"')
-    return title
+def safe_title(title: str) -> str:
+    """Escape a title for Markdown's double-quoted title syntax."""
+    return " ".join(title.splitlines()).replace("\\", "\\\\").replace('"', '\\"')
 
 
 def is_token_newlines_1p(token):
